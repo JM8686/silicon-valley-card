@@ -62,20 +62,20 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- 0. ICON COMPONENTS (Inline SVG for Stability) ---
-        const IconBriefcase = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
-        const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
-        const IconSparkles = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/></svg>;
-        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-        const IconGlobe = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
-        const IconTrophy = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
-        const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
-        const IconImage = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>;
-        const IconLink = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
-        const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
-        const IconRefresh = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>;
-        const IconWifi = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>;
-        const IconWifiOff = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" x2="22" y1="2" y2="22"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.61"/><path d="M22 8.82a15 15 0 0 0-11.288-2.676"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>;
+        // --- 0. ICON COMPONENTS (Fixed: Added props spreading) ---
+        const IconBriefcase = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
+        const IconZap = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-yellow-500 ${props.className || ''}`}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+        const IconSparkles = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/></svg>;
+        const IconUser = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const IconGlobe = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+        const IconTrophy = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
+        const IconX = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+        const IconImage = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>;
+        const IconLink = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+        const IconCopy = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+        const IconRefresh = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>;
+        const IconWifi = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>;
+        const IconWifiOff = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" x2="22" y1="2" y2="22"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.61"/><path d="M22 8.82a15 15 0 0 0-11.288-2.676"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>;
 
         // --- 1. CONFIGURATION ---
         const firebaseConfig = {
@@ -89,19 +89,26 @@
         const GEMINI_API_KEY = "AIzaSyCl82BtpKNBWosRC1sG1vZSt6B_wYjvngQ";
         const APP_ID = 'silicon-card';
 
-        // --- 2. FIREBASE INIT (Robust Check) ---
-        let app;
+        // --- 2. FIREBASE INIT (Compat Mode for Browser) ---
         if (!firebase.apps.length) {
-            app = firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp(firebaseConfig);
         } else {
-            app = firebase.app(); // Use existing app
+            firebase.app(); 
         }
         
-        // Use app-bound services to avoid conflicts
-        const auth = app.auth();
-        const db = app.firestore();
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-        // --- 3. MAIN COMPONENT ---
+        // --- 3. MOCK DATA FOR VIP LOUNGE ---
+        const MOCK_VIP_CARDS = [
+            { id: 'm1', title: 'Chief Home Protector', desc: '주거 공간의 엔트로피를 최소화하고 배달 음식의 물류 효율을 최적화하는 홈 인프라 총괄 책임자.', originalInput: '백수' },
+            { id: 'm2', title: 'Convenience Store Master', desc: '글로벌 유통망의 최전선에서 재고 자산의 유동성을 관리하고 바코드 스캐닝 프로세스를 지휘하는 현장 소장.', originalInput: '편의점 알바' },
+            { id: 'm3', title: 'Dopamine Mining Engineer', desc: '숏폼 플랫폼이라는 디지털 광산에서 고순도 도파민을 채굴하여 뇌내 보상 회로를 자극하는 신경화학 엔지니어.', originalInput: '유튜브 시청' },
+            { id: 'm4', title: 'Oxygen Circulation Specialist', desc: '대기 중 산소를 포집하여 혈류에 공급하고 이산화탄소 배출을 자동화하는 생명 유지 시스템 관리자.', originalInput: '숨쉬기' },
+            { id: 'm5', title: 'Keyboard Rhythm Conductor', desc: '기계식 스위치의 타건음을 조율하여 디지털 교향곡을 작곡하고 팀원들의 멘탈을 케어하는 E-스포츠 마에스트로.', originalInput: '게임' }
+        ];
+
+        // --- 4. MAIN COMPONENT ---
         const GrandTitleGenerator = () => {
             const [inputText, setInputText] = useState('');
             const [loading, setLoading] = useState(false);
@@ -109,9 +116,9 @@
             const [result, setResult] = useState(null);
             const [toast, setToast] = useState({ show: false, message: '' });
             const [user, setUser] = useState(null);
-            const [recentCards, setRecentCards] = useState([]);
+            // Initialize with MOCK data to ensure it's never empty
+            const [recentCards, setRecentCards] = useState(MOCK_VIP_CARDS);
             const [viewingCard, setViewingCard] = useState(null);
-            const [isConnected, setIsConnected] = useState(false);
             const [isPaused, setIsPaused] = useState(false);
             
             const cardRef = useRef(null);
@@ -122,35 +129,29 @@
 
             // --- Auth & Initial Load ---
             useEffect(() => {
-                // Ensure auth is initialized before signing in
-                const initAuth = async () => {
-                    try {
-                        await auth.signInAnonymously();
-                    } catch (e) {
-                        console.error("Auth Error:", e);
-                    }
-                };
-                initAuth();
-
+                auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
                 const unsubscribe = auth.onAuthStateChanged((u) => {
                     setUser(u);
-                    setIsConnected(!!u);
                 });
                 return () => unsubscribe();
             }, []);
 
             // --- Firestore Realtime Listener ---
             useEffect(() => {
-                if (!user) return;
                 try {
-                    // Use compat query syntax
+                    // Start listening regardless of auth state (public read)
                     const queryRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards')
                         .orderBy('createdAt', 'desc')
                         .limit(20);
                         
                     const unsubscribe = queryRef.onSnapshot((snapshot) => {
-                        const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setRecentCards(cards);
+                        if (!snapshot.empty) {
+                             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                             // Merge with mock data if real data is small, or just replace
+                             setRecentCards(cards.length < 5 ? [...cards, ...MOCK_VIP_CARDS] : cards);
+                        }
+                    }, (error) => {
+                         console.error("Firestore Read Error:", error);
                     });
                     return () => unsubscribe();
                 } catch (e) {
@@ -160,7 +161,7 @@
 
             // --- Display List for Infinite Scroll ---
             const displayList = useMemo(() => {
-                if (recentCards.length === 0) return [];
+                // Ensure list is long enough for smooth scrolling
                 let cards = [...recentCards];
                 while (cards.length < 10) {
                     cards = [...cards, ...recentCards];
@@ -168,14 +169,15 @@
                 return cards;
             }, [recentCards]);
 
-            // --- Auto Scroll Animation ---
+            // --- Auto Scroll Animation (Hybrid) ---
             useEffect(() => {
                 const scrollContainer = vipScrollRef.current;
                 if (!scrollContainer || displayList.length === 0) return;
 
                 const animate = () => {
                     if (!isPaused && scrollContainer) {
-                        const speed = 1.0;
+                        const speed = 1.0; 
+                        // Infinite Scroll Logic
                         if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
                            scrollContainer.scrollLeft = 0; 
                         } else {
@@ -263,7 +265,7 @@
                 try {
                     const ta = document.createElement("textarea");
                     ta.value = text;
-                    ta.style.position = "fixed"; ta.style.left = "-9999px";
+                    ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.top = "0";
                     document.body.appendChild(ta); ta.focus(); ta.select();
                     document.execCommand('copy'); document.body.removeChild(ta);
                     showToast("복사되었습니다! 📝");
@@ -298,10 +300,7 @@
                                 desc.style.whiteSpace = 'pre-wrap';
                                 desc.style.paddingRight = '10px';
                             }
-                            const badge = doc.getElementById('card-badge');
-                             const badgeText = doc.getElementById('card-badge-text');
-                            if (badge) badge.style.display = 'inline-flex';
-                            if (badgeText) badgeText.style.lineHeight = '1';
+                            // No badge text adjustment needed as it's removed in HTML but check if exists
                         }
                     });
 
@@ -356,13 +355,13 @@
                         {!result && !loading && (
                             <div className="p-8 space-y-6">
                                 <div className="space-y-3">
-                                    <label className="flex items-center gap-2 text-black font-extrabold text-lg uppercase tracking-tight">
-                                        <IconZap /> Current Status (입력)
+                                    <label htmlFor="job-input" className="flex items-center gap-2 text-black font-extrabold text-lg uppercase tracking-tight">
+                                        <IconZap className="w-5 h-5 text-yellow-500 fill-current" /> Current Status (입력)
                                     </label>
                                     <input ref={inputRef} type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && analyzeIdentity()} placeholder="예: 편의점 알바, 누워있기, 헬스장..." className="w-full bg-indigo-50 text-black border-4 border-black focus:border-indigo-500 rounded-lg px-4 py-5 outline-none transition-all placeholder-gray-500 font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] focus:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] text-base md:text-lg" />
                                 </div>
                                 <button onClick={analyzeIdentity} disabled={!inputText.trim()} className={`w-full py-4 rounded-lg font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transform transition-all flex items-center justify-center gap-2 active:translate-y-1 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] min-h-[60px] ${inputText.trim() ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-black hover:brightness-110 cursor-pointer' : 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-400 shadow-none'}`}>
-                                    <IconSparkles /> 실리콘밸리 명함 만들기
+                                    <IconSparkles className="w-6 h-6" /> 실리콘밸리 명함 만들기
                                 </button>
                             </div>
                         )}
@@ -384,7 +383,7 @@
                                             <div className="flex flex-col items-end pt-1"><div className="text-yellow-400 text-xl tracking-widest font-bold drop-shadow-sm leading-none">★★★★★</div></div>
                                         </div>
                                         <div className="mb-6 flex-grow">
-                                            <h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}>{result.title}</h2>
+                                            <h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words">{result.title}</h2>
                                             <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
                                             <p id="card-description" className="text-gray-300 text-sm md:text-base font-medium italic leading-relaxed pr-2" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>"{result.desc}"</p>
                                         </div>
@@ -438,6 +437,7 @@
                                 ))}
                             </div>
                         </div>
+                        <p className="text-center text-white/60 text-xs font-medium mt-6">* 마우스를 올리거나 터치하면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}
@@ -462,7 +462,6 @@
 
                     {/* Footer */}
                     <footer className="w-full text-center py-6 border-t border-white/10 mt-auto">
-                        <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40 mb-2"><span>Server Status:</span> {isConnected ? <span className="flex items-center gap-1 text-green-400"><IconWifi /> Online</span> : <span className="flex items-center gap-1 text-red-400"><IconWifiOff /> Offline</span>}</div>
                         <p className="text-white/60 text-xs font-bold">Powered by Gemini AI & Bluff Technology™</p>
                     </footer>
 

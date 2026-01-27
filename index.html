@@ -5,7 +5,7 @@ import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged }
 import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query } from 'firebase/firestore';
 
 // -------------------------------------------------------------------------
-// Firebase Initialization & Logic (Hybrid: Canvas & Deployment)
+// Firebase Initialization & Logic (Hybrid: Works in both Canvas & GitHub)
 // -------------------------------------------------------------------------
 
 // 1. 사용자의 배포용 설정 (GitHub Pages 등 실제 서비스용)
@@ -23,7 +23,7 @@ const productionFirebaseConfig = {
 let firebaseConfig;
 try {
   firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-    ? JSON.parse(__firebase_config)
+    ? JSON.parse(__firebase_config) 
     : productionFirebaseConfig;
 } catch (e) {
   firebaseConfig = productionFirebaseConfig;
@@ -34,8 +34,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. App ID 설정 (Firestore 경로용)
-// Canvas 환경이면 __app_id 사용, 아니면 프로젝트 ID('silicon-card') 사용
+// 4. App ID 설정 (Canvas: __app_id, GitHub: 'silicon-card')
 const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'silicon-card';
 
 const GrandTitleGenerator = () => {
@@ -63,7 +62,7 @@ const GrandTitleGenerator = () => {
   // Scroll State
   const [isPaused, setIsPaused] = useState(false);
 
-  // 사용자의 Gemini API Key
+  // Gemini API Key
   const apiKey = "AIzaSyCl82BtpKNBWosRC1sG1vZSt6B_wYjvngQ"; 
 
   // 1. Auth & Script Loading & SEO Injection
@@ -106,14 +105,14 @@ const GrandTitleGenerator = () => {
     updateOG('og:image', 'https://via.placeholder.com/1200x630.png?text=Silicon+Valley+Card');
     updateOG('og:type', 'website');
 
-    // Auth Logic (Robust for both Canvas & Production)
+    // Auth Logic (Canvas & GitHub Dual Support)
     const initAuth = async () => {
         try {
-            // Canvas 환경에서 Custom Token이 제공되면 우선 사용 (권한 문제 해결)
+            // Canvas 환경에서는 Custom Token 우선 시도 (권한 오류 방지)
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
-                // 그 외(배포 환경)에서는 익명 로그인 사용
+                // GitHub 등 배포 환경에서는 익명 로그인 사용
                 await signInAnonymously(auth);
             }
         } catch (e) {
@@ -137,7 +136,6 @@ const GrandTitleGenerator = () => {
     if (!user) return;
 
     try {
-        // 공용 데이터 경로 (appId에 따라 분기됨)
         const cardsRef = collection(db, 'artifacts', appId, 'public', 'data', 'cards');
         
         const unsubscribe = onSnapshot(cardsRef, (snapshot) => {
@@ -154,7 +152,7 @@ const GrandTitleGenerator = () => {
 
         return () => unsubscribe();
     } catch (e) {
-        console.error("Firestore setup error:", e);
+        console.error("Firestore error:", e);
     }
   }, [user]);
 
@@ -177,8 +175,10 @@ const GrandTitleGenerator = () => {
 
     const animate = () => {
       if (!isPaused && scrollContainer) {
+        // 속도 설정 (1.0)
         const speed = 1.0;
         
+        // 무한 스크롤 로직: 스크롤이 절반(복제된 부분) 이상 가면 처음으로 리셋
         if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
            scrollContainer.scrollLeft = 0; 
         } else {
@@ -290,7 +290,10 @@ const GrandTitleGenerator = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => showToast(successMessage))
-        .catch(() => fallbackCopyText(text, successMessage));
+        .catch((err) => {
+          console.warn("Clipboard API failed, using fallback:", err);
+          fallbackCopyText(text, successMessage);
+        });
     } else {
       fallbackCopyText(text, successMessage);
     }
@@ -330,6 +333,8 @@ const GrandTitleGenerator = () => {
         return;
     }
     setCapturing(true);
+    
+    // 렌더링 안정화 대기
     await new Promise(r => setTimeout(r, 200));
 
     try {
@@ -366,6 +371,7 @@ const GrandTitleGenerator = () => {
         }
         
         const file = new File([blob], 'silicon-valley-card.png', { type: 'image/png' });
+        
         const shareData = {
             files: [file],
             title: '실리콘밸리 명함 만들기',

@@ -50,8 +50,11 @@
         
         /* VIP Scroll Specific */
         .vip-container {
-            touch-action: pan-x; /* 모바일에서 가로 스크롤 중 세로 스크롤 방지 */
-            overscroll-behavior-x: contain; /* 바운스 효과 방지 */
+            touch-action: pan-x; 
+            overscroll-behavior-x: contain;
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
         }
         
         /* Fade Mask */
@@ -70,7 +73,7 @@
         
         // --- 0. ICON COMPONENTS ---
         const IconBriefcase = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle'}}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle', flexShrink: 0}}>
                 <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
             </svg>
         );
@@ -81,8 +84,7 @@
         );
         const IconSparkles = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/>
-            </svg>
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/></svg>
         );
         const IconUser = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -183,7 +185,7 @@
             const vipScrollRef = useRef(null);
             const animationRef = useRef(null);
 
-            // --- Auth & Initial Load ---
+            // --- Auth ---
             useEffect(() => {
                 auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
                 const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
@@ -209,32 +211,45 @@
                 return () => unsubscribe();
             }, []);
 
-            // --- Auto Scroll Animation (Improved for Mobile) ---
-            useEffect(() => {
-                const scrollContainer = vipScrollRef.current;
-                if (!scrollContainer || recentCards.length === 0) return;
-
-                const animate = () => {
-                    if (!isPaused && scrollContainer) {
-                        const speed = 0.8; 
-                        const halfWidth = scrollContainer.scrollWidth / 2;
-                        if (scrollContainer.scrollLeft >= halfWidth) {
-                           scrollContainer.scrollLeft = 0; 
-                        } else {
-                           scrollContainer.scrollLeft += speed;
-                        }
-                    }
-                    animationRef.current = requestAnimationFrame(animate);
-                };
-                animationRef.current = requestAnimationFrame(animate);
-                return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-            }, [isPaused, recentCards]);
-
             const displayList = useMemo(() => {
                 let cards = [...recentCards];
                 while (cards.length < 10) cards.push(...recentCards);
                 return cards;
             }, [recentCards]);
+
+            // --- Auto Scroll Animation (Fix for Mobile Initial Load) ---
+            useEffect(() => {
+                const scrollContainer = vipScrollRef.current;
+                if (!scrollContainer || displayList.length === 0) return;
+
+                let animationId;
+                const animate = () => {
+                    if (!isPaused && scrollContainer) {
+                        const speed = 0.8; 
+                        const halfWidth = scrollContainer.scrollWidth / 2;
+                        
+                        // 크기 계산이 완료된 경우에만 작동
+                        if (halfWidth > 0) {
+                            if (scrollContainer.scrollLeft >= halfWidth) {
+                               scrollContainer.scrollLeft = 0; 
+                            } else {
+                               scrollContainer.scrollLeft += speed;
+                            }
+                        }
+                    }
+                    animationId = requestAnimationFrame(animate);
+                };
+
+                // 모바일 레이아웃 안정을 위해 약간 지연 후 시작
+                const timeoutId = setTimeout(() => {
+                    animationId = requestAnimationFrame(animate);
+                }, 500);
+
+                return () => {
+                    clearTimeout(timeoutId);
+                    if (animationId) cancelAnimationFrame(animationId);
+                };
+            }, [isPaused, displayList]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
@@ -362,7 +377,7 @@
                         <div className="inline-block bg-white border-4 border-black px-6 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-2">
                             <div className="flex items-center gap-2">
                                 <IconBriefcase className="w-7 h-7 text-indigo-600" />
-                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase">실리콘밸리 명함 만들기</h1>
+                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase leading-none">실리콘밸리 명함 만들기</h1>
                             </div>
                         </div>
                         <div className="bg-yellow-300 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg">
@@ -443,7 +458,7 @@
                         <div className="relative w-full fade-mask">
                             <div 
                                 ref={vipScrollRef} 
-                                className="vip-container flex gap-4 overflow-x-auto scrollbar-hide" 
+                                className="vip-container scrollbar-hide" 
                                 onMouseEnter={() => setIsPaused(true)} 
                                 onMouseLeave={() => setIsPaused(false)} 
                                 onTouchStart={() => setIsPaused(true)} 

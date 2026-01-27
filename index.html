@@ -38,12 +38,14 @@
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* Pure CSS Infinite Marquee for iOS Safari */
+        /* VIP Lounge - Optimized CSS Marquee */
         .vip-marquee-container {
             width: 100%;
-            overflow: hidden;
+            overflow-x: auto; 
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
             position: relative;
-            touch-action: pan-y; /* 수동 가로 조작을 막아 페이지 전체 흔들림 방지 */
+            touch-action: pan-x;
         }
         
         .vip-marquee-track {
@@ -52,9 +54,10 @@
             width: max-content;
             animation: marqueeFlow 50s linear infinite;
             will-change: transform;
+            padding: 1rem 0;
         }
 
-        /* 멈춤 기능: 호버하거나 터치(active) 중일 때 일시정지 */
+        /* 호버 및 터치 시 일시정지 */
         .vip-marquee-container:hover .vip-marquee-track,
         .vip-marquee-container:active .vip-marquee-track {
             animation-play-state: paused;
@@ -62,7 +65,7 @@
 
         @keyframes marqueeFlow {
             0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); } /* 데이터 세트가 2번 반복되므로 절반 지점으로 Snap */
+            100% { transform: translateX(-50%); }
         }
         
         .fade-mask {
@@ -143,8 +146,9 @@
             messagingSenderId: "942702520870",
             appId: "1:942702520870:web:2abc7d4b35abbd6828d4e7"
         };
-        const GEMINI_API_KEY = ""; // 자가 모델 할당을 위해 비워둠
-        const MODEL_NAME = "gemini-2.5-flash-preview-09-2025"; 
+        // 사용자 요청에 따른 모델명 업데이트 및 API 키 적용
+        const GEMINI_API_KEY = "AIzaSyCl82BtpKNBWosRC1sG1vZSt6B_wYjvngQ"; 
+        const MODEL_NAME = "gemini-3-flash"; 
         const APP_ID = 'silicon-card';
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -160,23 +164,22 @@
             const [user, setUser] = useState(null);
             const [recentCards, setRecentCards] = useState([]);
             const [viewingCard, setViewingCard] = useState(null);
+            const [isPaused, setIsPaused] = useState(false); // 터치 상태 관리
             
             const topRef = useRef(null);
             const inputRef = useRef(null);
             const cardRef = useRef(null);
 
-            // 기본 목업 데이터 (새로운 규칙 적용)
+            // 기본 목업 데이터 (가독성 가이드라인 준수)
             const MOCK_VIP_CARDS = useMemo(() => [
-                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 비정형적 주거 엔트로피(무질서도)를 조율하고 가상 배달 플랫폼의 물류 스트림을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다.', originalInput: '백수' },
-                { id: 'm2', title: 'Barcode Algorithm Evangelist', desc: '저는 글로벌 유통망의 라스트 마일 거점에서 바코드 스캐닝 알고리즘을 지휘하며, 실시간 재고 흐름을 필터링하고 조직의 현금 리퀴디티(유동성)를 즉각적으로 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
-                { id: 'm3', title: 'Dopamine Mining Architect', desc: '저는 알고리즘 기반 디지털 광산에서 초고농축 도파민(뇌내 즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
+                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 주거 공간의 엔트로피(무질서도)를 조율하고, 배달 플랫폼의 물류 스트림을 분석하여 최적의 영양 공급망을 사수하는 홈 인프라 관리 업무를 수행하고 있습니다.', originalInput: '백수' },
+                { id: 'm2', title: 'Global Last-Mile Logistics Master', desc: '저는 유통망의 라스트 마일(최종 배송 구간)에서 실시간 재고 흐름을 필터링하고, 바코드 알고리즘을 지휘하여 조직의 현금 리퀴디티를 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
+                { id: 'm3', title: 'Digital Dopamine Mining Architect', desc: '저는 숏폼 비디오라는 디지털 광산에서 초고농축 도파민(즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
             ], []);
 
             useEffect(() => {
                 const initAuth = async () => {
-                    try {
-                        await auth.signInAnonymously();
-                    } catch (e) { console.error("Auth Error:", e); }
+                    try { await auth.signInAnonymously(); } catch (e) { console.error("Auth Error:", e); }
                 };
                 initAuth();
                 const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
@@ -198,7 +201,6 @@
                 return () => unsubscribe();
             }, []);
 
-            // 무한 루프를 위한 데이터 복제 (CSS 전용)
             const displayList = useMemo(() => {
                 const base = recentCards.length > 0 ? recentCards : MOCK_VIP_CARDS;
                 let fullSet = [...base];
@@ -209,7 +211,8 @@
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
                 try {
-                    await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards').add({
+                    const cardsRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards');
+                    await cardsRef.add({
                         ...cardData,
                         userId: user.uid,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -245,26 +248,26 @@
                 setResult(null);
 
                 const systemPrompt = `
-                  You are a satirical AI. GOAL: Turn mundane jobs into grandiose, meme-heavy Silicon Valley executive titles and descriptions.
+                  당신은 평범한 직업을 실리콘밸리 CEO처럼 거창하게 바꿔주는 풍자 AI입니다. 
+                  **목표:** 사용자의 입력을 듣고, 아주 짧고 임팩트 있는 영어 직함과 유머러스한 한글 설명을 생성하세요.
                   
-                  INSTRUCTIONS:
-                  1. Title (English): 3-5 words. Sound like a delusional C-level executive.
-                  2. Description (Korean): 
-                     - Start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
-                     - Tone: Hyper-formal, ridiculous, and grandiose.
-                     - **LANGUAGE RULE:** All English terms/jargon MUST be written in Korean phonetic characters (e.g., "엔트로피" instead of "Entropy").
-                     - **PARENTHESES RULE:** Pick ONLY 1 or 2 most important or difficult terms in the entire description and provide a short Korean definition in parentheses immediately after the term (e.g., "엔트로피(무질서도)").
-                     - **DO NOT** use parentheses for every word. Keep it clean.
+                  **프롬프트 규칙:**
+                  1. **직함 (English):** 3-5단어 이내. "Chief", "Strategist", "Architect" 등을 섞어 아주 거창하게 만드세요.
+                  2. **설명 (한글):** - 반드시 "저는"으로 시작하고 "하고 있습니다" 또는 "수행하고 있습니다"로 끝내세요.
+                     - **한글 중심:** 이해하기 쉬운 한글 표현을 최대한 많이 사용하세요.
+                     - **언어 규칙:** 모든 영어 전문 용어는 반드시 **한글 음차**로 적으세요. (예: "엔트로피", "인프라", "리퀴디티").
+                     - **뜻 병기 규칙:** 전체 설명 중 가장 낯선 용어 **딱 1개 또는 2개만** 골라, 한글 음차 뒤에 괄호를 넣고 쉬운 한글 뜻을 표기하세요. (예: "엔트로피(무질서도)", "인프라(기반시설)").
+                     - **유머 코드:** 일상의 사소한 행동을 실리콘밸리 유니콘 기업의 핵심 공정처럼 묘사하여 웃음을 유발하세요.
                   
-                  Return VALID JSON only: { "title": "...", "desc": "..." }
-                  Input: "${inputText}"
+                  **출력 형식:** JSON { "title": "...", "desc": "..." }
+                  **입력값:** "${inputText}"
                 `;
 
                 let aiResult = await callGemini(systemPrompt);
                 if (!aiResult) {
                     aiResult = {
                         title: "Chief Disruption Strategist",
-                        desc: "저는 비정형 데이터의 구조적 엔트로피(무질서도)를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 하이퍼스케일링을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
+                        desc: "저는 일상의 비정형 데이터를 필터링하고 엔트로피(무질서도)를 조율하여 평온한 홈 인프라를 사수하는 전략적 거버넌스 업무를 수행하고 있습니다."
                     };
                     showToast("AI 연결 지연으로 샘플 모드로 동작합니다.");
                 }
@@ -281,7 +284,7 @@
 
             const handleCopyText = () => {
                 if (!result) return;
-                const text = `[${result.title}]\n\n"${result.desc}"\n\n🔗 나도 만들기: ${window.location.href}`;
+                const text = `[${result.title}]\n\n"${result.desc}"\n\nORIGIN: ${result.originalInput}\n\n#실리콘밸리명함`;
                 navigator.clipboard.writeText(text).then(() => showToast("텍스트가 복사되었습니다! 📝"));
             };
 
@@ -408,7 +411,7 @@
                         )}
                     </section>
 
-                    {/* VIP Lounge (Pure CSS Marquee Fix for iOS) */}
+                    {/* VIP Lounge (Pure CSS Marquee Fix) */}
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
@@ -419,8 +422,14 @@
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            <div className="vip-marquee-container">
-                                <div className="vip-marquee-track">
+                            <div 
+                                className="vip-marquee-container scrollbar-hide" 
+                                onTouchStart={() => setIsPaused(true)}
+                                onTouchEnd={() => setIsPaused(false)}
+                                onMouseEnter={() => setIsPaused(true)}
+                                onMouseLeave={() => setIsPaused(false)}
+                            >
+                                <div className="vip-marquee-track" style={{ animationPlayState: isPaused ? 'paused' : 'running' }}>
                                     {displayList.map((card, index) => (
                                         <div 
                                             key={`${card.id}-${index}`} 
@@ -445,7 +454,7 @@
                                 </div>
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하거나 마우스를 올리면 멈춥니다.</p>
+                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하면 멈추며, 직접 좌우로 밀어볼 수도 있습니다.</p>
                     </section>
                     
                     {/* Modal */}

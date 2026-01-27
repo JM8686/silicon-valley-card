@@ -39,15 +39,31 @@
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* VIP Scroll - Hybrid Native Scroll Approach */
-        .vip-scroll-area {
+        /* VIP Scroll - Zero-JS CSS Animation Solution */
+        .vip-scroll-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            touch-action: pan-y; /* 수동 가로 스크롤 차단하여 페이지 출렁임 방지 */
+        }
+        
+        .vip-scroll-track {
             display: flex;
             gap: 1.5rem;
-            overflow-x: auto;
-            scroll-behavior: auto;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-x; /* 세로 스크롤 허용, 가로 인터랙션 격리 */
-            width: 100%;
+            width: max-content;
+            animation: marquee 50s linear infinite;
+            will-change: transform;
+        }
+
+        /* 터치하거나 마우스 올리면 멈춤 */
+        .vip-scroll-container:hover .vip-scroll-track,
+        .vip-scroll-container:active .vip-scroll-track {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
         
         .fade-mask {
@@ -142,7 +158,7 @@
             {
               keywords: ['백수', '무직', '노는', '취준', '놀고', '집'],
               title: "Chief Executive Home Architect",
-              desc: "저는 주거 공간의 생활 엔트로피를 조율하고 배달 플랫폼 데이터 스트림을 실시간으로 분석하여 최적의 영양 공급망을 구축하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다."
+              desc: "저는 비정형적 주거 엔트로피를 조율하고 가상 배달 플랫폼의 물류 스트림을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다."
             },
             {
               keywords: ['편의점', '알바', '캐셔', '마트'],
@@ -155,7 +171,7 @@
             { id: 'm1', title: 'Chief Visionary Home Protector', desc: '주거 공간의 공간적 가치를 선제적으로 수호하고 배달 음식 물류의 라스트 마일 효율을 극대화하는 인프라 수호자.', originalInput: '백수' },
             { id: 'm2', title: 'Barcode Algorithm Conductor', desc: '글로벌 유통망의 최접점에서 자산 유동성을 통제하고 고객의 소구 데이터를 실시간으로 동기화하는 현장 지휘자.', originalInput: '편의점 알바' },
             { id: 'm3', title: 'Dopamine Mining Architect', desc: '알고리즘 기반의 디지털 광산에서 초고농축 도파민을 채굴하여 뇌내 보상 체계를 최적화하는 신경망 엔지니어.', originalInput: '유튜브 시청' },
-            { id: 'm4', title: 'Atmospheric Oxygen Logistics', desc: '대기 중 산소 분자를 포집하여 생체 혈류 시스템으로 정밀하게 펌핑하고 부산물을 자동 배출하는 생존 최적화 업무.', originalInput: '숨쉬기' },
+            { id: 'm4', title: 'Atmospheric Oxygen Logistics', desc: '대기 중 산소를 정밀하게 포집하여 생체 혈류 시스템으로 펌핑하고 부산물을 자동 배출하는 생존 최적화 업무.', originalInput: '숨쉬기' },
             { id: 'm5', title: 'RGB Keyboard Harmony Ninja', desc: '기계식 스위치의 타건음을 조율하여 가상 전장의 승률을 매핑하고 팀원들의 멘탈 엔트로피를 케어하는 마에스트로.', originalInput: '게임' }
         ];
 
@@ -169,15 +185,12 @@
             const [user, setUser] = useState(null);
             const [recentCards, setRecentCards] = useState(MOCK_VIP_CARDS);
             const [viewingCard, setViewingCard] = useState(null);
-            const [isPaused, setIsPaused] = useState(false);
             
             const topRef = useRef(null);
             const inputRef = useRef(null);
             const cardRef = useRef(null);
-            const vipScrollRef = useRef(null);
-            const animationRef = useRef(null);
 
-            // --- Auth & Initial Load ---
+            // --- Auth ---
             useEffect(() => {
                 auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
                 const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
@@ -202,47 +215,13 @@
                 return () => unsubscribe();
             }, []);
 
-            // 끊김 없는 루프를 위해 리스트를 반복 (가로 스크롤 범위 확보)
+            // CSS 애니메이션용 무한 반복 데이터
             const displayList = useMemo(() => {
                 let cards = [...recentCards];
                 while (cards.length < 10) cards = [...cards, ...recentCards];
-                // 무한 루프를 위해 한 번 더 복제
+                // 무한 루프를 위해 두 벌 배치
                 return [...cards, ...cards];
             }, [recentCards]);
-
-            // --- Hybrid Native Scroll Logic (The Core Solution) ---
-            useEffect(() => {
-                const scrollContainer = vipScrollRef.current;
-                if (!scrollContainer || displayList.length === 0) return;
-
-                let animationId;
-                const speed = 0.8; // 스크롤 속도
-
-                const animate = () => {
-                    if (!isPaused && scrollContainer) {
-                        const halfWidth = scrollContainer.scrollWidth / 2;
-                        
-                        // 현재 스크롤 위치를 픽셀 단위로 이동 (Native scrollLeft 조작)
-                        scrollContainer.scrollLeft += speed;
-
-                        // 절반(첫 번째 리스트 끝)에 도달하면 즉시 처음으로 Snap
-                        if (scrollContainer.scrollLeft >= halfWidth) {
-                            scrollContainer.scrollLeft = 0;
-                        }
-                    }
-                    animationId = requestAnimationFrame(animate);
-                };
-
-                // 초기 로드 안정화 대기 후 시작
-                const timer = setTimeout(() => {
-                    animationId = requestAnimationFrame(animate);
-                }, 1000);
-
-                return () => {
-                    clearTimeout(timer);
-                    if (animationId) cancelAnimationFrame(animationId);
-                };
-            }, [isPaused, displayList]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
@@ -284,11 +263,12 @@
                   You are a satirical AI. GOAL: Turn mundane jobs into grandiose, meme-heavy Silicon Valley executive titles and descriptions.
                   
                   INSTRUCTIONS:
-                  1. Title (English): 3-6 words. Sound like a delusional C-level executive or tech wizard.
+                  1. Title (English): 3-6 words. Sound like a delusional C-level executive. Use: "Chief", "Strategist", "Architect", "Evangelist", "Ninja", "Wizard", "Guardian".
                   2. Description (Korean): 
-                     - Start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
-                     - HUMOR/MEME: Use absurd professional jargon to describe simple acts. (e.g., 'breathing' -> 'oxygen filtration process').
-                     - Tone: Formal, ridiculous, and meme-heavy.
+                     - MUST start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
+                     - Length: 2-3 long, extremely formal sentences.
+                     - HUMOR/MEME: Use absurd professional jargon to describe simple acts. (e.g., 'breathing' -> 'Oxygen filtration through atmospheric logistics', 'scrolling social media' -> 'Dopamine mining from unstructured visual data streams').
+                     - Tone: Completely ridiculous, hyper-formal, and heavy on internet 밈 (meme) culture.
                   
                   Return VALID JSON only: { "title": "...", "desc": "..." }
                   Input: "${inputText}"
@@ -365,15 +345,7 @@
                 setResult(null); 
                 setInputText('');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 500);
-            };
-
-            // 터치 시작/종료 핸들러 (Pointer 이벤트로 통합 제어)
-            const handlePointerDown = () => setIsPaused(true);
-            const handlePointerUp = () => {
-                // 사용자가 떼었을 때 약간의 지연 후 재개
-                setTimeout(() => setIsPaused(false), 200);
             };
 
             return (
@@ -449,7 +421,7 @@
                         )}
                     </section>
 
-                    {/* VIP Lounge (Hybrid Native Scroll) */}
+                    {/* VIP Lounge (Pure CSS Marquee Fix) */}
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
@@ -460,34 +432,28 @@
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            {/* Native overflow-x-auto allows manual swipe, JS auto-increments scrollLeft */}
-                            <div 
-                                ref={vipScrollRef} 
-                                className="vip-scroll-area scrollbar-hide" 
-                                onPointerDown={handlePointerDown}
-                                onPointerUp={handlePointerUp}
-                                onMouseEnter={() => setIsPaused(true)}
-                                onMouseLeave={() => setIsPaused(false)}
-                            >
-                                {displayList.map((card, index) => (
-                                    <div key={`${card.id}-${index}`} onClick={() => { setViewingCard(card); window.scrollTo({top:0, behavior:'smooth'}); }} className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform duration-300 relative overflow-hidden group">
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
-                                        <div className="p-5 h-64 flex flex-col justify-between">
-                                            <div>
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
-                                                    <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
+                            <div className="vip-scroll-container">
+                                <div className="vip-scroll-track">
+                                    {displayList.map((card, index) => (
+                                        <div key={`${card.id}-${index}`} onClick={() => { setViewingCard(card); window.scrollTo({top:0, behavior:'smooth'}); }} className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform duration-300 relative overflow-hidden group">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                                            <div className="p-5 h-64 flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
+                                                        <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
+                                                    </div>
+                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
+                                                    <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
                                                 </div>
-                                                <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
-                                                <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
+                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                             </div>
-                                            <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 직접 넘겨보거나 터치하면 멈춥니다.</p>
+                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하거나 마우스를 올리면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}
@@ -507,10 +473,7 @@
                                             <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
                                             <p className="text-gray-300 text-[17px] font-medium italic leading-relaxed pr-2">"{viewingCard.desc}"</p>
                                         </div>
-                                        <div className="border-t border-gray-700 pt-3 mt-4">
-                                            <div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div>
-                                            <div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div>
-                                        </div>
+                                        <div className="border-t border-gray-700 pt-3 mt-4"><div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div><div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div></div>
                                     </div>
                                 </div>
                             </div>

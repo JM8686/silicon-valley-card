@@ -31,7 +31,13 @@
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; background-color: #111827; color: white; }
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background-color: #111827; 
+            color: white; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
         .font-serif { font-family: 'Times New Roman', Times, serif; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -42,17 +48,18 @@
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        @keyframes scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+        /* VIP Scroll Specific */
+        .vip-container {
+            touch-action: pan-x; /* 모바일에서 가로 스크롤 중 세로 스크롤 방지 */
+            overscroll-behavior-x: contain; /* 바운스 효과 방지 */
         }
-        .animate-scroll { animation: scroll 20s linear infinite; }
         
         /* Fade Mask */
         .fade-mask {
-            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
+        .text-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
@@ -61,14 +68,14 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- 0. ICON COMPONENTS (Explicit style for visibility) ---
+        // --- 0. ICON COMPONENTS ---
         const IconBriefcase = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle'}}>
                 <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
             </svg>
         );
         const IconZap = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-yellow-500 ${className || ''}`}>
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
         );
@@ -127,17 +134,12 @@
             messagingSenderId: "942702520870",
             appId: "1:942702520870:web:2abc7d4b35abbd6828d4e7"
         };
-        // 최신 API Key 및 유효 모델명 설정
         const GEMINI_API_KEY = "AIzaSyCWNJTK7qMQ2BZ_8RtRFIb5rRWoUpO1tII";
-        const MODEL_NAME = "gemini-2.5-flash"; // 스크린샷 기반 유효 모델명
+        const MODEL_NAME = "gemini-2.5-flash"; 
         const APP_ID = 'silicon-card';
 
         // --- 2. FIREBASE INIT ---
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        } else {
-            firebase.app(); 
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
@@ -181,44 +183,42 @@
             const vipScrollRef = useRef(null);
             const animationRef = useRef(null);
 
-            // --- Auth ---
+            // --- Auth & Initial Load ---
             useEffect(() => {
                 auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
-                const unsubscribe = auth.onAuthStateChanged((u) => {
-                    setUser(u);
-                });
+                const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
                 return () => unsubscribe();
             }, []);
 
             // --- Firestore Realtime Listener ---
             useEffect(() => {
+                let unsubscribe = () => {};
                 try {
                     const queryRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards')
                         .orderBy('createdAt', 'desc')
                         .limit(20);
                         
-                    const unsubscribe = queryRef.onSnapshot((snapshot) => {
-                        if (!snapshot.empty) {
-                             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                             setRecentCards(cards.length < 5 ? [...cards, ...MOCK_VIP_CARDS] : cards);
+                    unsubscribe = queryRef.onSnapshot((snapshot) => {
+                        const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if (fetched.length > 0) {
+                            const combined = fetched.length < 5 ? [...fetched, ...MOCK_VIP_CARDS] : fetched;
+                            setRecentCards(combined);
                         }
-                    }, (error) => { console.error("Firestore Error:", error); });
-                    return () => unsubscribe();
+                    }, (error) => console.warn("Firestore Error:", error));
                 } catch (e) { console.error("Firestore Exception:", e); }
-            }, [user]);
+                return () => unsubscribe();
+            }, []);
 
-            // --- Auto Scroll Animation ---
+            // --- Auto Scroll Animation (Improved for Mobile) ---
             useEffect(() => {
                 const scrollContainer = vipScrollRef.current;
                 if (!scrollContainer || recentCards.length === 0) return;
 
-                const displayCards = [...recentCards];
-                while (displayCards.length < 10) displayCards.push(...recentCards);
-
                 const animate = () => {
                     if (!isPaused && scrollContainer) {
                         const speed = 0.8; 
-                        if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
+                        const halfWidth = scrollContainer.scrollWidth / 2;
+                        if (scrollContainer.scrollLeft >= halfWidth) {
                            scrollContainer.scrollLeft = 0; 
                         } else {
                            scrollContainer.scrollLeft += speed;
@@ -229,6 +229,12 @@
                 animationRef.current = requestAnimationFrame(animate);
                 return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
             }, [isPaused, recentCards]);
+
+            const displayList = useMemo(() => {
+                let cards = [...recentCards];
+                while (cards.length < 10) cards.push(...recentCards);
+                return cards;
+            }, [recentCards]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
@@ -241,11 +247,9 @@
                 } catch (e) { console.error("Save Error:", e); }
             };
 
-            // --- Gemini API (Fixed for 404 & Model List) ---
             const callGemini = async (prompt) => {
                 try {
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-                    
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -254,23 +258,13 @@
                             generationConfig: { responseMimeType: "application/json" }
                         }),
                     });
-                    
-                    if (!response.ok) {
-                        const err = await response.text();
-                        console.warn(`Gemini API Error [${response.status}]:`, err);
-                        return null; 
-                    }
-                    
+                    if (!response.ok) return null; 
                     const data = await response.json();
                     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (!rawText) return null;
-
                     const jsonStr = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
                     return JSON.parse(jsonStr);
-                } catch (e) { 
-                    console.warn("API Exception:", e);
-                    return null; 
-                }
+                } catch (e) { return null; }
             };
 
             const analyzeIdentity = async () => {
@@ -280,30 +274,27 @@
 
                 const systemPrompt = `
                   You are a satirical AI. GOAL: Turn mundane jobs into grandiose Silicon Valley executive titles and descriptions.
-                  1. Title (English): 3-6 words. Words like: Chief, Strategist, Architect, Ninja, Wizard.
+                  1. Title (English): 3-6 words. Sound like a C-level executive.
                   2. Description (Korean): 2-3 long, jargon-heavy sentences. Start with "저는", end with "하고 있습니다".
                   Return VALID JSON only: { "title": "...", "desc": "..." }
                   Input: "${inputText}"
                 `;
 
                 let aiResult = await callGemini(systemPrompt);
-                
                 if (!aiResult) {
                     const match = MOCK_DB.find(item => item.keywords.some(k => inputText.includes(k)));
                     aiResult = match ? { title: match.title, desc: match.desc } : {
-                        title: "Chief Innovation Evangelist",
-                        desc: "저는 비정형 데이터의 구조적 엔트로피를 조율하고 가상 네트워크 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 하이퍼 스케일링을 가속화하는 전략적 거버넌스 최적화 프로젝트를 수행하고 있습니다."
+                        title: "Chief Innovation Architect",
+                        desc: "저는 디지털 생태계의 복합적인 엔트로피를 조율하고 가상 자산의 가치를 선제적으로 매핑하여 조직의 하이퍼 스케일링을 주도하는 전략적 데이터 거버넌스 업무를 수행하고 있습니다."
                     };
                     showToast("AI 연결 지연으로 샘플 모드로 동작합니다.");
                 }
-
                 const finalResult = { ...aiResult, originalInput: inputText };
                 setResult(finalResult);
                 saveCardToFirestore(finalResult);
                 setLoading(false);
             };
 
-            // --- UI Handlers ---
             const showToast = (msg) => {
                 setToast({ show: true, message: msg });
                 setTimeout(() => setToast({ show: false, message: '' }), 3000);
@@ -323,7 +314,6 @@
                 if (!result || !cardRef.current) return;
                 setCapturing(true);
                 await new Promise(r => setTimeout(r, 200));
-
                 try {
                     const canvas = await window.html2canvas(cardRef.current, {
                         backgroundColor: '#1a202c', scale: 2, useCORS: true,
@@ -332,16 +322,14 @@
                             if (d) { d.style.wordBreak = 'break-word'; d.style.whiteSpace = 'pre-wrap'; }
                         }
                     });
-
                     canvas.toBlob(async (blob) => {
                         if (!blob) { setCapturing(false); return; }
                         const file = new File([blob], 'card.png', { type: 'image/png' });
                         const shareData = {
                             files: [file],
                             title: '실리콘밸리 명함',
-                            text: `실리콘밸리 명함 만들기 ✨\n[${result.title}]\n🔗 나도 만들어보기: ${window.location.href}`
+                            text: `실리콘밸리 명함 만들기 ✨\n[${result.title}]\n🔗 나도 만들기: ${window.location.href}`
                         };
-
                         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                             try { await navigator.share(shareData); } 
                             catch (e) { if (e.name !== 'AbortError') downloadImage(canvas); }
@@ -362,18 +350,10 @@
             const handleReset = () => {
                 setResult(null); 
                 setInputText('');
-                // 즉시 상단 이동 및 포커스
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                setTimeout(() => {
-                    if (inputRef.current) inputRef.current.focus();
-                }, 400);
+                if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 500);
             };
-
-            const displayList = useMemo(() => {
-                let cards = [...recentCards];
-                while (cards.length < 10) cards.push(...recentCards);
-                return cards;
-            }, [recentCards]);
 
             return (
                 <main ref={topRef} className="min-h-[100dvh] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex flex-col items-center justify-start p-4 font-sans selection:bg-yellow-300 selection:text-black overflow-x-hidden">
@@ -381,8 +361,8 @@
                     <header className="text-center mt-8 mb-8 w-full max-w-2xl animate-fade-in-down">
                         <div className="inline-block bg-white border-4 border-black px-6 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-2">
                             <div className="flex items-center gap-2">
-                                <IconBriefcase className="w-6 h-6 text-indigo-600 inline-block" />
-                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase inline-block ml-1">실리콘밸리 명함 만들기</h1>
+                                <IconBriefcase className="w-7 h-7 text-indigo-600" />
+                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase">실리콘밸리 명함 만들기</h1>
                             </div>
                         </div>
                         <div className="bg-yellow-300 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg">
@@ -461,7 +441,14 @@
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            <div ref={vipScrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide" style={{ width: '100%', cursor: 'grab', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }} onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onTouchStart={() => setIsPaused(true)} onTouchEnd={() => setIsPaused(false)} onTouchCancel={() => setIsPaused(false)}>
+                            <div 
+                                ref={vipScrollRef} 
+                                className="vip-container flex gap-4 overflow-x-auto scrollbar-hide" 
+                                onMouseEnter={() => setIsPaused(true)} 
+                                onMouseLeave={() => setIsPaused(false)} 
+                                onTouchStart={() => setIsPaused(true)} 
+                                onTouchEnd={() => setIsPaused(false)}
+                            >
                                 {displayList.map((card, index) => (
                                     <div key={`${card.id}-${index}`} onClick={() => { setViewingCard(card); window.scrollTo({top:0, behavior:'smooth'}); }} className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform duration-300 relative overflow-hidden group">
                                         <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
@@ -480,7 +467,7 @@
                                 ))}
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-xs font-medium mt-6">* 마우스를 올리거나 터치하면 멈춥니다.</p>
+                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 마우스를 올리거나 터치하면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}

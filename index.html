@@ -38,22 +38,32 @@
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* VIP Scroll Layout */
-        .vip-scroll-container {
+        /* --- [NEW] CSS Marquee Solution for iOS Safari --- */
+        .vip-marquee-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            touch-action: pan-y; /* 가로 터치 차단하여 페이지 튕김 방지 */
+        }
+        
+        .vip-marquee-track {
             display: flex;
             gap: 1.5rem;
-            overflow-x: auto;
-            scroll-behavior: auto;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-x;
-            width: 100%;
-            cursor: grab;
-            padding: 1rem 0;
-            /* iOS Safari scroll stability */
-            position: relative;
-            z-index: 1;
+            width: max-content;
+            animation: marqueeFlow 40s linear infinite;
+            will-change: transform;
         }
-        .vip-scroll-container:active { cursor: grabbing; }
+
+        /* 호버하거나 터치(active) 중일 때 멈춤 */
+        .vip-marquee-container:hover .vip-marquee-track,
+        .vip-marquee-container:active .vip-scroll-track {
+            animation-play-state: paused;
+        }
+
+        @keyframes marqueeFlow {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } /* 데이터 세트가 2번 반복되므로 절반 지점 */
+        }
         
         .fade-mask {
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
@@ -124,7 +134,7 @@
             </svg>
         );
 
-        // --- 설정 ---
+        // --- Firebase & API 설정 ---
         const firebaseConfig = {
             apiKey: "AIzaSyAq_82aL0otaPbubYB2Jo69MwVzJJuR4B8",
             authDomain: "silicon-card.firebaseapp.com",
@@ -150,18 +160,15 @@
             const [user, setUser] = useState(null);
             const [recentCards, setRecentCards] = useState([]);
             const [viewingCard, setViewingCard] = useState(null);
-            const [isPaused, setIsPaused] = useState(false);
             
             const topRef = useRef(null);
             const inputRef = useRef(null);
             const cardRef = useRef(null);
-            const vipScrollRef = useRef(null);
-            const animationRef = useRef(null);
 
             const MOCK_VIP_CARDS = useMemo(() => [
-                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 비정형적 주거 Entropy (엔트로피/무질서도)를 조율하고 가상 배달 플랫폼의 물류 Stream (스트림/흐름)을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다.', originalInput: '백수' },
-                { id: 'm2', title: 'Barcode Algorithm Evangelist', desc: '저는 글로벌 유통망의 Last Mile (라스트 마일/최종 배송 구간) 거점에서 바코드 스캐닝 알고리즘을 지휘하며, 실시간 재고 흐름을 필터링하고 조직의 현금 Liquidity (리퀴디티/유동성)를 즉각적으로 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
-                { id: 'm3', title: 'Dopamine Mining Architect', desc: '저는 알고리즘 기반 디지털 광산에서 초고농축 Dopamine (도파민/뇌내 즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
+                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 비정형적 주거 엔트로피(무질서도)를 조율하고 가상 배달 플랫폼의 물류 스트림을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다.', originalInput: '백수' },
+                { id: 'm2', title: 'Barcode Algorithm Evangelist', desc: '저는 글로벌 유통망의 라스트 마일 거점에서 바코드 스캐닝 알고리즘을 지휘하며, 실시간 재고 흐름을 필터링하고 조직의 현금 리퀴디티(유동성)를 즉각적으로 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
+                { id: 'm3', title: 'Dopamine Mining Architect', desc: '저는 알고리즘 기반 디지털 광산에서 초고농축 도파민(뇌내 즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
             ], []);
 
             useEffect(() => {
@@ -185,46 +192,13 @@
                 return () => unsubscribe();
             }, []);
 
+            // 무한 루프 데이터 세트 (최소 개수 보장 및 2세트 구성)
             const displayList = useMemo(() => {
                 const base = recentCards.length > 0 ? recentCards : MOCK_VIP_CARDS;
-                let cards = [...base];
-                while (cards.length < 10) cards = [...cards, ...base];
-                return [...cards, ...cards]; 
+                let fullSet = [...base];
+                while (fullSet.length < 8) fullSet = [...fullSet, ...base];
+                return [...fullSet, ...fullSet]; 
             }, [recentCards, MOCK_VIP_CARDS]);
-
-            // --- iOS Safari 최적화 애니메이션 루프 ---
-            useEffect(() => {
-                const scrollContainer = vipScrollRef.current;
-                if (!scrollContainer || displayList.length === 0) return;
-
-                const speed = 0.8; 
-                let frameId;
-
-                const animate = () => {
-                    if (!isPaused && scrollContainer) {
-                        const halfWidth = scrollContainer.scrollWidth / 2;
-                        
-                        // 너비가 계산되지 않았을 경우를 대비한 가동 조건
-                        if (halfWidth > 0) {
-                            scrollContainer.scrollLeft += speed;
-                            if (scrollContainer.scrollLeft >= halfWidth - 1) {
-                                scrollContainer.scrollLeft = 0;
-                            }
-                        }
-                    }
-                    frameId = requestAnimationFrame(animate);
-                };
-
-                // iOS Safari 레이아웃 안정을 위한 딜레이 시작
-                const startTimer = setTimeout(() => {
-                    frameId = requestAnimationFrame(animate);
-                }, 500);
-
-                return () => {
-                    clearTimeout(startTimer);
-                    if (frameId) cancelAnimationFrame(frameId);
-                };
-            }, [isPaused, displayList]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
@@ -263,15 +237,16 @@
                 setResult(null);
 
                 const systemPrompt = `
-                  You are a satirical "Silicon Valley Business Card Generator" AI. 
-                  GOAL: Turn mundane jobs into grandiose, meme-heavy titles and descriptions.
+                  You are a satirical AI. GOAL: Turn mundane jobs into grandiose, meme-heavy Silicon Valley executive titles and descriptions.
                   
                   INSTRUCTIONS:
-                  1. Title (English): 3-5 words. Sound like a delusional C-level executive.
+                  1. Title (English): 3-5 words. Words: Chief, Ninja, Evangelist, Architect, Strategist, Guardian, Master.
                   2. Description (Korean): 
-                     - Start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
-                     - Tone: Formal, ridiculous, and reflects internet memes.
-                     - **CRITICAL:** If you use an English term or Jargon, you MUST provide its Korean translation in parentheses immediately after the term. (Example: "Efficiency (효율)", "Infrastructure (인프라/기반시설)").
+                     - MUST start with "저는", MUST end with "하고 있습니다" or "수행하고 있습니다".
+                     - Tone: Hyper-formal, ridiculous, and grandiose.
+                     - **LANGUAGE RULE:** All English terms/jargon MUST be transliterated into Korean phonetic characters (e.g., "엔트로피" instead of "Entropy").
+                     - **PARENTHESES RULE:** Pick ONLY 1 or 2 most difficult terms in the entire description and provide a short Korean definition in parentheses immediately after (e.g., "엔트로피(무질서도)").
+                     - **DO NOT** use parentheses for every word. Keep it clean.
                   
                   Return VALID JSON only: { "title": "...", "desc": "..." }
                   Input: "${inputText}"
@@ -281,7 +256,7 @@
                 if (!aiResult) {
                     aiResult = {
                         title: "Chief Disruption Strategist",
-                        desc: "저는 비정형 데이터의 구조적 Entropy (엔트로피/무질서도)를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 Hyper-scaling (하이퍼스케일링/초거대 성장)을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
+                        desc: "저는 비정형 데이터의 구조적 엔트로피(무질서도)를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 하이퍼스케일링을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
                     };
                     showToast("AI 연결 지연으로 샘플 모드로 동작합니다.");
                 }
@@ -349,13 +324,6 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 500);
-            };
-
-            // 멈춤/재개 핸들러 (iOS touch 호환성 강화)
-            const pauseScroll = () => setIsPaused(true);
-            const resumeScroll = () => {
-                // 약간의 지연 후 재개하여 브라우저 가속 엔진과의 마찰 최소화
-                setTimeout(() => setIsPaused(false), 100);
             };
 
             return (
@@ -431,7 +399,7 @@
                         )}
                     </section>
 
-                    {/* VIP Lounge (iOS Optimized) */}
+                    {/* VIP Lounge (CSS Only Marquee for iOS) */}
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
@@ -442,38 +410,33 @@
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            <div 
-                                ref={vipScrollRef} 
-                                className="vip-scroll-container scrollbar-hide" 
-                                onMouseEnter={pauseScroll}
-                                onMouseLeave={resumeScroll}
-                                onTouchStart={pauseScroll}
-                                onTouchEnd={resumeScroll}
-                                onTouchCancel={resumeScroll}
-                            >
-                                {displayList.map((card, index) => (
-                                    <div 
-                                        key={`${card.id}-${index}`} 
-                                        onClick={() => setViewingCard(card)} 
-                                        className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group pointer-events-auto"
-                                    >
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
-                                        <div className="p-5 h-64 flex flex-col justify-between pointer-events-none">
-                                            <div>
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
-                                                    <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
+                            <div className="vip-marquee-container">
+                                <div className="vip-marquee-track">
+                                    {displayList.map((card, index) => (
+                                        <div 
+                                            key={`${card.id}-${index}`} 
+                                            onClick={() => setViewingCard(card)} 
+                                            className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group"
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                                            <div className="p-5 h-64 flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
+                                                        <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
+                                                    </div>
+                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
+                                                    <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
                                                 </div>
-                                                <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
-                                                <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
+                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                             </div>
-                                            <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 직접 넘겨보거나 터치하면 멈춥니다.</p>
+                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하거나 마우스를 올리면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}

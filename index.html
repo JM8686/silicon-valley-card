@@ -33,38 +33,24 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Animations */
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* VIP Scroll - Zero-JS CSS Animation Solution */
+        /* VIP Scroll Container */
         .vip-scroll-container {
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-            touch-action: pan-y; /* 수동 가로 스크롤 차단하여 페이지 출렁임 방지 */
-        }
-        
-        .vip-scroll-track {
             display: flex;
             gap: 1.5rem;
-            width: max-content;
-            animation: marquee 50s linear infinite;
-            will-change: transform;
+            overflow-x: auto;
+            scroll-behavior: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            width: 100%;
+            cursor: grab;
+            padding: 1rem 0;
         }
-
-        /* 터치하거나 마우스 올리면 멈춤 */
-        .vip-scroll-container:hover .vip-scroll-track,
-        .vip-scroll-container:active .vip-scroll-track {
-            animation-play-state: paused;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
+        .vip-scroll-container:active { cursor: grabbing; }
         
         .fade-mask {
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
@@ -79,7 +65,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- 0. ICON COMPONENTS ---
+        // --- 아이콘 컴포넌트 ---
         const IconBriefcase = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle', flexShrink: 0}}>
                 <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
@@ -135,7 +121,7 @@
             </svg>
         );
 
-        // --- 1. CONFIGURATION ---
+        // --- 설정 ---
         const firebaseConfig = {
             apiKey: "AIzaSyAq_82aL0otaPbubYB2Jo69MwVzJJuR4B8",
             authDomain: "silicon-card.firebaseapp.com",
@@ -148,56 +134,44 @@
         const MODEL_NAME = "gemini-2.5-flash"; 
         const APP_ID = 'silicon-card';
 
-        // --- 2. FIREBASE INIT ---
+        // Firebase 초기화
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- 3. MOCK DATA ---
-        const MOCK_DB = [
-            {
-              keywords: ['백수', '무직', '노는', '취준', '놀고', '집'],
-              title: "Chief Executive Home Architect",
-              desc: "저는 비정형적 주거 엔트로피를 조율하고 가상 배달 플랫폼의 물류 스트림을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다."
-            },
-            {
-              keywords: ['편의점', '알바', '캐셔', '마트'],
-              title: "Global Inventory Liquidity Master",
-              desc: "저는 유통망의 라스트 마일 거점에서 바코드 스캐닝 알고리즘을 지휘하며, 실시간 재고 흐름을 필터링하고 조직의 현금 유동성을 즉각적으로 확보하는 현장 거버넌스 역할을 맡고 있습니다."
-            }
-        ];
-
-        const MOCK_VIP_CARDS = [
-            { id: 'm1', title: 'Chief Visionary Home Protector', desc: '주거 공간의 공간적 가치를 선제적으로 수호하고 배달 음식 물류의 라스트 마일 효율을 극대화하는 인프라 수호자.', originalInput: '백수' },
-            { id: 'm2', title: 'Barcode Algorithm Conductor', desc: '글로벌 유통망의 최접점에서 자산 유동성을 통제하고 고객의 소구 데이터를 실시간으로 동기화하는 현장 지휘자.', originalInput: '편의점 알바' },
-            { id: 'm3', title: 'Dopamine Mining Architect', desc: '알고리즘 기반의 디지털 광산에서 초고농축 도파민을 채굴하여 뇌내 보상 체계를 최적화하는 신경망 엔지니어.', originalInput: '유튜브 시청' },
-            { id: 'm4', title: 'Atmospheric Oxygen Logistics', desc: '대기 중 산소를 정밀하게 포집하여 생체 혈류 시스템으로 펌핑하고 부산물을 자동 배출하는 생존 최적화 업무.', originalInput: '숨쉬기' },
-            { id: 'm5', title: 'RGB Keyboard Harmony Ninja', desc: '기계식 스위치의 타건음을 조율하여 가상 전장의 승률을 매핑하고 팀원들의 멘탈 엔트로피를 케어하는 마에스트로.', originalInput: '게임' }
-        ];
-
-        // --- 4. MAIN COMPONENT ---
-        const GrandTitleGenerator = () => {
+        // 메인 컴포넌트
+        const App = () => {
             const [inputText, setInputText] = useState('');
             const [loading, setLoading] = useState(false);
             const [capturing, setCapturing] = useState(false);
             const [result, setResult] = useState(null);
             const [toast, setToast] = useState({ show: false, message: '' });
             const [user, setUser] = useState(null);
-            const [recentCards, setRecentCards] = useState(MOCK_VIP_CARDS);
+            const [recentCards, setRecentCards] = useState([]);
             const [viewingCard, setViewingCard] = useState(null);
+            const [isPaused, setIsPaused] = useState(false);
             
             const topRef = useRef(null);
             const inputRef = useRef(null);
             const cardRef = useRef(null);
+            const vipScrollRef = useRef(null);
+            const animationRef = useRef(null);
 
-            // --- Auth ---
+            // 데이터가 없을 때를 대비한 기본 리스트
+            const MOCK_VIP_CARDS = useMemo(() => [
+                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 비정형적 주거 Entropy (엔트로피/무질서도)를 조율하고 가상 배달 플랫폼의 물류 Stream (스트림/흐름)을 선제적으로 매핑하여 최적의 영양 상태를 유지하는 홈 인프라 가용성 총괄 업무를 수행하고 있습니다.', originalInput: '백수' },
+                { id: 'm2', title: 'Barcode Algorithm Evangelist', desc: '저는 글로벌 유통망의 Last Mile (라스트 마일/최종 배송 구간) 거점에서 바코드 스캐닝 알고리즘을 지휘하며, 실시간 재고 흐름을 필터링하고 조직의 현금 Liquidity (리퀴디티/유동성)를 즉각적으로 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
+                { id: 'm3', title: 'Dopamine Mining Architect', desc: '저는 알고리즘 기반 디지털 광산에서 초고농축 Dopamine (도파민/뇌내 즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
+            ], []);
+
+            // 인증 로직
             useEffect(() => {
                 auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
                 const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
                 return () => unsubscribe();
             }, []);
 
-            // --- Firestore Realtime Listener ---
+            // Firestore 데이터 구독
             useEffect(() => {
                 let unsubscribe = () => {};
                 try {
@@ -207,21 +181,44 @@
                         
                     unsubscribe = queryRef.onSnapshot((snapshot) => {
                         const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        if (fetched.length > 0) {
-                            setRecentCards([...fetched, ...MOCK_VIP_CARDS]);
-                        }
+                        setRecentCards(fetched);
                     }, (error) => console.warn("Firestore Error:", error));
                 } catch (e) { console.error("Firestore Exception:", e); }
                 return () => unsubscribe();
             }, []);
 
-            // CSS 애니메이션용 무한 반복 데이터
+            // 무한 루프를 위한 디스플레이 리스트 계산
             const displayList = useMemo(() => {
-                let cards = [...recentCards];
-                while (cards.length < 10) cards = [...cards, ...recentCards];
-                // 무한 루프를 위해 두 벌 배치
-                return [...cards, ...cards];
-            }, [recentCards]);
+                const base = recentCards.length > 0 ? recentCards : MOCK_VIP_CARDS;
+                let cards = [...base];
+                while (cards.length < 10) cards = [...cards, ...base];
+                return [...cards, ...cards]; // 2배 복제하여 끊김 방지
+            }, [recentCards, MOCK_VIP_CARDS]);
+
+            // --- [핵심] 멈춤 기능이 완벽한 자바스크립트 스크롤 루프 ---
+            useEffect(() => {
+                const scrollContainer = vipScrollRef.current;
+                if (!scrollContainer || displayList.length === 0) return;
+
+                const speed = 0.8; // 이동 속도
+                const animate = () => {
+                    if (!isPaused && scrollContainer) {
+                        const halfWidth = scrollContainer.scrollWidth / 2;
+                        scrollContainer.scrollLeft += speed;
+                        
+                        // 절반 지점에 도달하면 즉시 처음으로 루프
+                        if (scrollContainer.scrollLeft >= halfWidth) {
+                            scrollContainer.scrollLeft = 0;
+                        }
+                    }
+                    animationRef.current = requestAnimationFrame(animate);
+                };
+
+                animationRef.current = requestAnimationFrame(animate);
+                return () => {
+                    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+                };
+            }, [isPaused, displayList]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
@@ -260,15 +257,15 @@
                 setResult(null);
 
                 const systemPrompt = `
-                  You are a satirical AI. GOAL: Turn mundane jobs into grandiose, meme-heavy Silicon Valley executive titles and descriptions.
+                  You are a satirical "Silicon Valley Business Card Generator" AI. 
+                  GOAL: Turn mundane jobs into grandiose, meme-heavy titles and descriptions.
                   
                   INSTRUCTIONS:
-                  1. Title (English): 3-6 words. Sound like a delusional C-level executive. Use: "Chief", "Strategist", "Architect", "Evangelist", "Ninja", "Wizard", "Guardian".
+                  1. Title (English): 3-5 words. Sound like a delusional C-level executive or niche expert.
                   2. Description (Korean): 
-                     - MUST start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
-                     - Length: 2-3 long, extremely formal sentences.
-                     - HUMOR/MEME: Use absurd professional jargon to describe simple acts. (e.g., 'breathing' -> 'Oxygen filtration through atmospheric logistics', 'scrolling social media' -> 'Dopamine mining from unstructured visual data streams').
-                     - Tone: Completely ridiculous, hyper-formal, and heavy on internet 밈 (meme) culture.
+                     - Start with "저는", end with "하고 있습니다" or "수행하고 있습니다".
+                     - Tone: Formal, ridiculous, and reflects internet memes.
+                     - **CRITICAL:** If you use an English term or Jargon, you MUST provide its Korean translation in parentheses immediately after the term. (Example: "Efficiency (효율)", "Infrastructure (인프라/기반시설)").
                   
                   Return VALID JSON only: { "title": "...", "desc": "..." }
                   Input: "${inputText}"
@@ -276,10 +273,9 @@
 
                 let aiResult = await callGemini(systemPrompt);
                 if (!aiResult) {
-                    const match = MOCK_DB.find(item => item.keywords.some(k => inputText.includes(k)));
-                    aiResult = match ? { title: match.title, desc: match.desc } : {
+                    aiResult = {
                         title: "Chief Disruption Strategist",
-                        desc: "저는 비정형 데이터의 구조적 엔트로피를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 하이퍼 스케일링을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
+                        desc: "저는 비정형 데이터의 구조적 Entropy (엔트로피/무질서도)를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 Hyper-scaling (하이퍼스케일링/초거대 성장)을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
                     };
                     showToast("AI 연결 지연으로 샘플 모드로 동작합니다.");
                 }
@@ -345,7 +341,15 @@
                 setResult(null); 
                 setInputText('');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (topRef.current) topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 500);
+            };
+
+            // 멈춤/재개 핸들러
+            const pauseScroll = () => setIsPaused(true);
+            const resumeScroll = () => {
+                // 사용자가 마우스를 떼거나 터치를 뗄 때 즉시 재개 (약간의 지연으로 부드러움 확보)
+                setTimeout(() => setIsPaused(false), 50);
             };
 
             return (
@@ -396,6 +400,7 @@
                                         <div className="mb-6 flex-grow">
                                             <h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words">{result.title}</h2>
                                             <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
+                                            {/* 설명 텍스트 크기 강화 (모바일 17px) */}
                                             <p id="card-description" className="text-gray-300 text-[17px] md:text-lg font-medium italic leading-relaxed pr-2" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>"{result.desc}"</p>
                                         </div>
                                         <div className="border-t border-gray-700 pt-3 mt-4">
@@ -421,7 +426,7 @@
                         )}
                     </section>
 
-                    {/* VIP Lounge (Pure CSS Marquee Fix) */}
+                    {/* VIP Lounge */}
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
@@ -432,28 +437,39 @@
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            <div className="vip-scroll-container">
-                                <div className="vip-scroll-track">
-                                    {displayList.map((card, index) => (
-                                        <div key={`${card.id}-${index}`} onClick={() => { setViewingCard(card); window.scrollTo({top:0, behavior:'smooth'}); }} className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform duration-300 relative overflow-hidden group">
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
-                                            <div className="p-5 h-64 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
-                                                        <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
-                                                    </div>
-                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
-                                                    <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
+                            {/* 데스크톱(Mouse)와 모바일(Pointer) 이벤트를 모두 연결하여 완벽한 멈춤 보장 */}
+                            <div 
+                                ref={vipScrollRef} 
+                                className="vip-scroll-container scrollbar-hide" 
+                                onMouseEnter={pauseScroll}
+                                onMouseLeave={resumeScroll}
+                                onPointerDown={pauseScroll}
+                                onPointerUp={resumeScroll}
+                                onPointerCancel={resumeScroll}
+                            >
+                                {displayList.map((card, index) => (
+                                    <div 
+                                        key={`${card.id}-${index}`} 
+                                        onClick={() => setViewingCard(card)} 
+                                        className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group pointer-events-auto"
+                                    >
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                                        <div className="p-5 h-64 flex flex-col justify-between pointer-events-none">
+                                            <div>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
+                                                    <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
                                                 </div>
-                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
+                                                <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
+                                                <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
                                             </div>
+                                            <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하거나 마우스를 올리면 멈춥니다.</p>
+                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 직접 넘겨보거나 터치하면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}
@@ -473,7 +489,10 @@
                                             <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
                                             <p className="text-gray-300 text-[17px] font-medium italic leading-relaxed pr-2">"{viewingCard.desc}"</p>
                                         </div>
-                                        <div className="border-t border-gray-700 pt-3 mt-4"><div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div><div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div></div>
+                                        <div className="border-t border-gray-700 pt-3 mt-4">
+                                            <div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div>
+                                            <div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -493,7 +512,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<GrandTitleGenerator />);
+        root.render(<App />);
     </script>
 </body>
 </html>

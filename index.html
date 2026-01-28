@@ -9,15 +9,16 @@
     <meta name="description" content="평범한 직업을 실리콘밸리 CEO처럼 포장해주는 AI 명함 생성기입니다.">
     <meta property="og:title" content="실리콘밸리 명함 만들기">
     <meta property="og:description" content="당신의 평범한 일상을 실리콘밸리 유니콘 기업 CEO처럼 만들어드립니다.">
+    <meta property="og:image" content="https://via.placeholder.com/1200x630.png?text=Silicon+Valley+Card">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -32,13 +33,12 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Animations */
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* VIP Lounge - Hardware Accelerated CSS Marquee with Native Scroll Support */
+        /* VIP Lounge Marquee */
         .vip-marquee-container {
             width: 100%;
             overflow-x: auto; 
@@ -52,12 +52,11 @@
             display: flex;
             gap: 1.5rem;
             width: max-content;
-            animation: marqueeFlow 60s linear infinite;
+            animation: marqueeFlow 50s linear infinite;
             will-change: transform;
             padding: 1rem 0;
         }
 
-        /* Interaction handling: Pause animation on interaction */
         .vip-marquee-container:hover .vip-marquee-track,
         .vip-marquee-container:active .vip-marquee-track {
             animation-play-state: paused;
@@ -81,64 +80,29 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- Icons ---
-        const IconBriefcase = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle', flexShrink: 0}}>
-                <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        // --- 아이콘 컴포넌트 ---
+        const IconBriefcase = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>);
+        const IconZap = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-yellow-500 ${className || ''}`}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
+        const IconSparkles = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/></svg>);
+        const IconUser = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+        const IconGlobe = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
+        const IconTrophy = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>);
+        const IconX = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>);
+        const IconImage = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
             </svg>
         );
-        const IconZap = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-yellow-500 ${className || ''}`}>
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        const IconLink = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
         );
-        const IconSparkles = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 3v4"/><path d="M15 5h4"/></svg>
-        );
-        const IconUser = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        const IconCopy = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
             </svg>
         );
-        const IconGlobe = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-        );
-        const IconTrophy = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
-            </svg>
-        );
-        const IconX = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-            </svg>
-        );
-        const IconImage = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-            </svg>
-        );
-        const IconLink = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-            </svg>
-        );
-        const IconCopy = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-            </svg>
-        );
-        const IconRefresh = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+        const IconRefresh = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
             </svg>
         );
 
-        // --- Firebase Config & App ID ---
-        const productionFirebaseConfig = {
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
             apiKey: "AIzaSyAq_82aL0otaPbubYB2Jo69MwVzJJuR4B8",
             authDomain: "silicon-card.firebaseapp.com",
             projectId: "silicon-card",
@@ -146,128 +110,181 @@
             messagingSenderId: "942702520870",
             appId: "1:942702520870:web:2abc7d4b35abbd6828d4e7"
         };
-        
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : productionFirebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'silicon-card';
+        // 최신 API Key 및 유효 모델명 설정
+        const GEMINI_API_KEY = "AIzaSyDrjB6Wi_lT07RbGoBWCTP4YvHRO7xCf4U";
+        const MODEL_NAME = "gemini-2.5-flash"; 
+        const APP_ID = 'silicon-card';
 
-        // Initialize Firebase
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        // --- 2. FIREBASE INIT (Compat Mode for Browser) ---
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        } else {
+            firebase.app(); 
+        }
+        
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        const App = () => {
+        // --- 3. MOCK & FALLBACK DATA ---
+        const MOCK_DB = [
+            {
+              keywords: ['백수', '무직', '노는', '취준', '놀고', '집'],
+              title: "Chief Home Protector",
+              desc: "저는 비전 탐색형 자유 경영인으로서 스케줄의 전면 자유화를 통해 생산성을 극대화하고 있으며, 다양한 콘텐츠 소비를 통해 창의적 인사이트를 축적하는 홈 프로텍터 업무를 수행하고 있습니다."
+            },
+            {
+              keywords: ['편의점', '알바', '캐셔', '마트'],
+              title: "Chief Barcode Scanner",
+              desc: "저는 글로벌 유통망의 라스트 마일 거점에서 실시간 재고 유동성을 통제하고 있으며, 고객 구매 데이터를 기반으로 매장 내 에너지 흐름을 최적화하는 현장 지휘관 역할을 맡고 있습니다."
+            }
+        ];
+
+        const MOCK_VIP_CARDS = [
+            { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 주거 공간의 엔트로피(무질서도)를 조율하고 배달 음식의 물류 효율을 최적화하는 홈 인프라 총괄 책임자.', originalInput: '백수' },
+            { id: 'm2', title: 'Convenience Store Master', desc: '저는 글로벌 유통망의 최전선에서 재고 자산의 유동성을 관리하고 바코드 스캐닝 프로세스를 지휘하는 현장 소장.', originalInput: '편의점 알바' },
+            { id: 'm3', title: 'Dopamine Mining Engineer', desc: '저는 숏폼 플랫폼이라는 디지털 광산에서 고순도 도파민을 채굴하여 뇌내 보상 회로를 자극하는 신경화학 엔지니어.', originalInput: '유튜브 시청' },
+            { id: 'm4', title: 'Oxygen Circulation Specialist', desc: '저는 대기 중 산소를 포집하여 혈류에 공급하고 이산화탄소 배출을 자동화하는 생명 유지 시스템 관리자.', originalInput: '숨쉬기' },
+            { id: 'm5', title: 'Keyboard Rhythm Conductor', desc: '저는 기계식 스위치의 타건음을 조율하여 디지털 교향곡을 작곡하고 팀원들의 멘탈을 케어하는 E-스포츠 마에스트로.', originalInput: '게임' }
+        ];
+
+        // --- 4. MAIN COMPONENT ---
+        const GrandTitleGenerator = () => {
             const [inputText, setInputText] = useState('');
             const [loading, setLoading] = useState(false);
             const [capturing, setCapturing] = useState(false);
             const [result, setResult] = useState(null);
             const [toast, setToast] = useState({ show: false, message: '' });
             const [user, setUser] = useState(null);
-            const [recentCards, setRecentCards] = useState([]);
+            const [recentCards, setRecentCards] = useState(MOCK_VIP_CARDS);
             const [viewingCard, setViewingCard] = useState(null);
             const [isPaused, setIsPaused] = useState(false);
             
             const topRef = useRef(null);
             const inputRef = useRef(null);
             const cardRef = useRef(null);
+            const vipScrollRef = useRef(null);
+            const animationRef = useRef(null);
 
-            // 속도 최적화 모델 설정
-            const apiKey = ""; 
-            const model = "gemini-2.5-flash-preview-09-2025";
-
-            const MOCK_VIP_CARDS = useMemo(() => [
-                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 주거 공간의 엔트로피(무질서도)를 조율하고 가상 배달 플랫폼의 물류 스트림을 분석하여 최적의 영양 공급망을 사수하는 홈 인프라 관리 업무를 수행하고 있습니다.', originalInput: '백수' },
-                { id: 'm2', title: 'Global Last-Mile Logistics Master', desc: '저는 유통망의 라스트 마일(최종 배송 구간)에서 실시간 재고 흐름을 필터링하고 바코드 알고리즘을 지휘하여 조직의 리퀴디티를 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
-                { id: 'm3', title: 'Digital Dopamine Mining Architect', desc: '저는 숏폼 비디오라는 디지털 광산에서 초고농축 도파민(즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 데이터 큐레이션 업무를 수행하고 있습니다.', originalInput: '유튜브 시청' }
-            ], []);
-
+            // --- Auth ---
             useEffect(() => {
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await auth.signInWithCustomToken(__initial_auth_token);
-                        } else {
-                            await auth.signInAnonymously();
-                        }
-                    } catch (e) { console.error("Auth Error:", e); }
-                };
-                initAuth();
-                const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
+                auth.signInAnonymously().catch(e => console.error("Auth Error:", e));
+                const unsubscribe = auth.onAuthStateChanged((u) => {
+                    setUser(u);
+                });
                 return () => unsubscribe();
             }, []);
 
+            // --- Effect: Handle Reset & Scroll to Input ---
             useEffect(() => {
-                if (!user) return;
-                const cardsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('cards');
-                const unsubscribe = cardsRef.orderBy('createdAt', 'desc').limit(20).onSnapshot((snapshot) => {
-                    const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setRecentCards(fetched);
-                }, (error) => console.warn("Firestore Error:", error));
-                return () => unsubscribe();
+                if (result === null && !loading) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (topRef.current) {
+                        topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    setTimeout(() => {
+                        if (inputRef.current) inputRef.current.focus();
+                    }, 500); 
+                }
+            }, [result, loading]);
+
+            // --- Firestore Realtime Listener ---
+            useEffect(() => {
+                try {
+                    const queryRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards')
+                        .orderBy('createdAt', 'desc')
+                        .limit(20);
+                        
+                    const unsubscribe = queryRef.onSnapshot((snapshot) => {
+                        if (!snapshot.empty) {
+                             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                             setRecentCards(cards.length < 5 ? [...cards, ...MOCK_VIP_CARDS] : cards);
+                        }
+                    }, (error) => {
+                         console.error("Firestore Read Error:", error);
+                    });
+                    return () => unsubscribe();
+                } catch (e) {
+                    console.error("Firestore Error:", e);
+                }
             }, [user]);
 
             const displayList = useMemo(() => {
-                const base = recentCards.length > 0 ? recentCards : MOCK_VIP_CARDS;
-                let fullSet = [...base];
-                while (fullSet.length < 8) fullSet = [...fullSet, ...base];
-                return [...fullSet, ...fullSet]; 
-            }, [recentCards, MOCK_VIP_CARDS]);
+                let cards = [...recentCards];
+                while (cards.length < 10) {
+                    cards = [...cards, ...recentCards];
+                }
+                return cards;
+            }, [recentCards]);
+
+            // --- Auto Scroll Animation ---
+            useEffect(() => {
+                const scrollContainer = vipScrollRef.current;
+                if (!scrollContainer || displayList.length === 0) return;
+
+                const animate = () => {
+                    if (!isPaused && scrollContainer) {
+                        const speed = 1.0; 
+                        if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
+                           scrollContainer.scrollLeft = 0; 
+                        } else {
+                           scrollContainer.scrollLeft += speed;
+                        }
+                    }
+                    animationRef.current = requestAnimationFrame(animate);
+                };
+
+                if (animationRef.current) cancelAnimationFrame(animationRef.current);
+                animationRef.current = requestAnimationFrame(animate);
+
+                return () => {
+                    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+                };
+            }, [isPaused, displayList]);
 
             const saveCardToFirestore = async (cardData) => {
                 if (!user) return;
                 try {
-                    const cardsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('cards');
-                    await cardsRef.add({
+                    await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('cards').add({
                         ...cardData,
                         userId: user.uid,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                } catch (e) { console.error("Save Error:", e); }
+                } catch (e) {
+                    console.error("Save Error:", e);
+                }
             };
 
-            const callGeminiWithRetry = async (userPrompt) => {
-                const systemPrompt = `
-                  당신은 평범한 직업을 실리콘밸리 CEO처럼 거창하게 바꿔주는 풍자 AI입니다. 
-                  목표: 사용자의 입력을 듣고, 멋진 영어 직함과 유머러스한 한글 설명을 생성하세요.
-                  
-                  규칙:
-                  1. 직함 (English): 3-5단어 이내. 아주 거창하게 만드세요.
-                  2. 설명 (한글): 
-                     - 반드시 "저는"으로 시작하고 "수행하고 있습니다"로 끝내세요.
-                     - 모든 영어 단어는 반드시 한글 음차로 적으세요. (예: "엔트로피", "인프라").
-                     - 핵심 단어 딱 1~2개만 골라 한글 음차 뒤에 괄호를 넣고 한글 뜻을 표기하세요. (예: "엔트로피(무질서도)").
-                     - 사소한 행동을 유니콘 기업의 핵심 공정처럼 묘사하세요.
-                  
-                  오직 다음 JSON 형식으로만 응답하세요: { "title": "...", "desc": "..." }
-                `;
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-                const payload = {
-                    contents: [{ parts: [{ text: `입력값: "${userPrompt}"` }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: { responseMimeType: "application/json" }
-                };
-
-                const attempt = async (retries = 5, delay = 1000) => {
-                    try {
-                        const response = await fetch(url, {
+            // --- Gemini API ---
+            const callGemini = async (prompt) => {
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
+                        {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload),
-                        });
-                        if (!response.ok) throw new Error(`Status ${response.status}`);
-                        const data = await response.json();
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        return JSON.parse(text.replace(/```json/g, "").replace(/```/g, "").trim());
-                    } catch (e) {
-                        if (retries > 0) {
-                            await new Promise(r => setTimeout(r, delay));
-                            return attempt(retries - 1, delay * 2);
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            }),
                         }
-                        throw e;
+                    );
+                    
+                    if (!response.ok) {
+                        const err = await response.text();
+                        console.warn(`Gemini API Error [${response.status}]:`, err);
+                        return null; 
                     }
-                };
+                    
+                    const data = await response.json();
+                    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!rawText) return null;
 
-                try { return await attempt(); } catch (e) { return null; }
+                    const jsonStr = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                    return JSON.parse(jsonStr);
+                } catch (e) { 
+                    console.warn("API Exception:", e);
+                    return null; 
+                }
             };
 
             const analyzeIdentity = async () => {
@@ -275,70 +292,148 @@
                 setLoading(true);
                 setResult(null);
 
-                const aiResult = await callGeminiWithRetry(inputText);
+                const systemPrompt = `
+                  You are a satirical "Silicon Valley Business Card Generator" AI. 
+                  GOAL: Turn mundane inputs into SHORT, WITTY, GRANDIOSE titles (English) and DETAILED, COMPLEX, MEME-HEAVY descriptions (Korean).
+                  
+                  RULES:
+                  1. Title (English): Max 3-6 words. Sound like a C-level executive.
+                     - Use: "Chief", "Strategist", "Architect", "Ninja", "Wizard", "Evangelist".
+                  2. Description (Korean): 
+                     - Start with: "저는".
+                     - End with: "하고 있습니다" or "수행하고 있습니다".
+                     - Length: 2-3 long sentences (approx 150-250 chars).
+                     - Use difficult jargon to describe simple acts. (e.g., 'breathing' -> 'oxygen filtration process').
+                     - Include internet meme concepts.
+                     - **LANGUAGE RULE:** All English terms/jargon MUST be written in Korean phonetic characters (e.g., "엔트로피" instead of "Entropy").
+                     - **PARENTHESES RULE:** Pick ONLY 1 or 2 most important or difficult terms in the entire description and provide a short Korean definition in parentheses immediately after the word. (e.g., "엔트로피(무질서도)").
+
+                  OUTPUT FORMAT: { "title": "...", "desc": "..." } (Return valid JSON only)
+                  Input: "${inputText}"
+                `;
+
+                let aiResult = await callGemini(systemPrompt);
                 
                 if (!aiResult) {
-                    const fallback = {
-                        title: "Chief Disruption Strategist",
-                        desc: "저는 일상의 비정형 데이터를 필터링하고 엔트로피(무질서도)를 조율하여 평온한 홈 인프라를 사수하는 전략적 거버넌스 업무를 수행하고 있습니다."
-                    };
-                    setResult({ ...fallback, originalInput: inputText });
-                    saveCardToFirestore({ ...fallback, originalInput: inputText });
-                    showToast("연결 지연으로 샘플 모드로 전환되었습니다.");
-                } else {
-                    const finalResult = { ...aiResult, originalInput: inputText };
-                    setResult(finalResult);
-                    saveCardToFirestore(finalResult);
+                    const match = MOCK_DB.find(item => item.keywords.some(k => inputText.includes(k)));
+                    if (match) {
+                        aiResult = { title: match.title, desc: match.desc };
+                    } else {
+                        aiResult = {
+                            title: "Chief Chaos Mitigation Strategist",
+                            desc: "저는 비정형 데이터의 구조적 엔트로피(무질서도)를 조율하고 가상 생태계 내에서의 리스크를 선제적으로 매핑하여 조직의 하이퍼 스케일링을 가속화하는 전략적 거버넌스 업무를 수행하고 있습니다."
+                        };
+                    }
+                    showToast("AI 서버 연결 지연으로 샘플 모드로 전환합니다.");
                 }
+
+                const finalResult = { ...aiResult, originalInput: inputText };
+                setResult(finalResult);
+                saveCardToFirestore(finalResult);
                 setLoading(false);
             };
 
+            // --- Helper Functions ---
             const showToast = (msg) => {
                 setToast({ show: true, message: msg });
                 setTimeout(() => setToast({ show: false, message: '' }), 3000);
             };
 
+            const fallbackCopy = (text) => {
+                try {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.top = "0";
+                    document.body.appendChild(ta); ta.focus(); ta.select();
+                    document.execCommand('copy'); document.body.removeChild(ta);
+                    showToast("복사되었습니다! 📝");
+                } catch (e) { showToast("복사 실패"); }
+            };
+
             const handleCopyText = () => {
                 if (!result) return;
                 const text = `[${result.title}]\n\n"${result.desc}"\n\nORIGIN: ${result.originalInput}\n\n#실리콘밸리명함`;
-                navigator.clipboard.writeText(text).then(() => showToast("텍스트가 복사되었습니다! 📝"));
+                if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast("텍스트 복사 완료! 📝")).catch(() => fallbackCopy(text));
+                else fallbackCopy(text);
+            };
+
+            const handleCopyLink = () => {
+                const url = window.location.href;
+                if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast("링크 복사 완료! 🔗")).catch(() => fallbackCopy(url));
+                else fallbackCopy(url);
             };
 
             const handleShareImage = async () => {
                 if (!result || !cardRef.current) return;
                 setCapturing(true);
                 await new Promise(r => setTimeout(r, 200));
+
                 try {
                     const canvas = await window.html2canvas(cardRef.current, {
                         backgroundColor: '#1a202c', scale: 2, useCORS: true,
                         onclone: (doc) => {
-                            const d = doc.getElementById('card-description');
-                            if (d) { d.style.wordBreak = 'break-word'; d.style.whiteSpace = 'pre-wrap'; }
+                            const desc = doc.getElementById('card-description');
+                            if (desc) { 
+                                desc.style.wordBreak = 'break-word'; 
+                                desc.style.whiteSpace = 'pre-wrap';
+                                desc.style.paddingRight = '10px';
+                            }
                         }
                     });
+
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) { setCapturing(false); return; }
+                        const file = new File([blob], 'card.png', { type: 'image/png' });
+                        const shareData = {
+                            files: [file],
+                            title: '실리콘밸리 명함 만들기',
+                            text: `실리콘밸리 명함 만들기 👇\n[${result.title}]\n\n🔗 나도 만들어보기: ${window.location.href}`
+                        };
+
+                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                            try { await navigator.share(shareData); } 
+                            catch (e) { 
+                                if (e.name !== 'AbortError') downloadImage(canvas);
+                            }
+                        } else {
+                            downloadImage(canvas);
+                        }
+                        setCapturing(false);
+                    });
+                } catch (e) {
+                    setCapturing(false);
+                    showToast("이미지 생성 오류");
+                }
+            };
+
+            const downloadImage = (canvas) => {
+                try {
                     const link = document.createElement('a');
-                    link.download = `silicon-card-${Date.now()}.png`;
-                    link.href = canvas.toDataURL();
+                    link.download = `silicon-valley-card-${Date.now()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
                     showToast("이미지를 저장했습니다! 💾");
-                } catch (e) { showToast("이미지 생성 오류"); }
-                setCapturing(false);
+                } catch (e) {
+                    showToast("저장 실패");
+                }
             };
 
             const handleReset = () => {
                 setResult(null); 
                 setInputText('');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 500);
+                // Scroll effect handles the rest via useEffect
             };
 
             return (
                 <main ref={topRef} className="min-h-[100dvh] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex flex-col items-center justify-start p-4 font-sans selection:bg-yellow-300 selection:text-black overflow-x-hidden">
+                    {/* Header */}
                     <header className="text-center mt-8 mb-8 w-full max-w-2xl animate-fade-in-down">
                         <div className="inline-block bg-white border-4 border-black px-6 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-2">
                             <div className="flex items-center gap-2">
-                                <IconBriefcase className="w-7 h-7 text-indigo-600" />
-                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase leading-none">실리콘밸리 명함 만들기</h1>
+                                <IconBriefcase className="w-6 h-6 text-indigo-600" />
+                                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase">실리콘밸리 명함 만들기</h1>
                             </div>
                         </div>
                         <div className="bg-yellow-300 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg">
@@ -346,12 +441,13 @@
                         </div>
                     </header>
 
+                    {/* Input / Result Section */}
                     <section className="w-full max-w-lg bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,0.2)] rounded-xl overflow-hidden transform transition-all duration-300 mb-12 relative z-10">
                         {!result && !loading && (
                             <div className="p-8 space-y-6">
                                 <div className="space-y-3">
                                     <label htmlFor="job-input" className="flex items-center gap-2 text-black font-extrabold text-lg uppercase tracking-tight">
-                                        <IconZap className="w-5 h-5" /> Current Status (입력)
+                                        <IconZap className="w-5 h-5 text-yellow-500 fill-current" /> Current Status (입력)
                                     </label>
                                     <input ref={inputRef} id="job-input" type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && analyzeIdentity()} placeholder="예: 편의점 알바, 누워있기, 헬스장..." className="w-full bg-indigo-50 text-black border-4 border-black focus:border-indigo-500 rounded-lg px-4 py-5 outline-none transition-all placeholder-gray-500 font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] focus:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] text-base md:text-lg" />
                                 </div>
@@ -364,7 +460,7 @@
                         {loading && (
                             <div className="p-12 flex flex-col items-center justify-center space-y-6 text-center bg-indigo-50 min-h-[300px]">
                                 <div className="w-20 h-20 border-8 border-black border-t-yellow-400 rounded-full animate-spin"></div>
-                                <div><p className="text-xl font-black text-black animate-pulse">실리콘밸리 Valuation 측정 중... 💰</p></div>
+                                <div><p className="text-xl font-black text-black animate-pulse">실리콘밸리 연봉 협상 중... 💰</p><p className="text-sm font-bold text-indigo-600 mt-2">Calculating Valuation...</p></div>
                             </div>
                         )}
 
@@ -380,7 +476,7 @@
                                         <div className="mb-6 flex-grow">
                                             <h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words">{result.title}</h2>
                                             <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
-                                            <p id="card-description" className="text-gray-300 text-[17px] md:text-lg font-medium italic leading-relaxed pr-2" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>"{result.desc}"</p>
+                                            <p id="card-description" className="text-gray-300 text-sm md:text-base font-medium italic leading-relaxed pr-2" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>"{result.desc}"</p>
                                         </div>
                                         <div className="border-t border-gray-700 pt-3 mt-4">
                                             <div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {result.originalInput}</p></div>
@@ -390,10 +486,10 @@
                                 </article>
 
                                 <div className="bg-yellow-50 p-4 border-b-4 border-black grid grid-cols-2 gap-3">
-                                    <button onClick={handleShareImage} disabled={capturing} className="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait min-h-[60px]">
-                                        {capturing ? <span className="flex items-center gap-2">📸 생성 중...</span> : <><IconImage className="w-5 h-5 mr-2" /> 이미지 공유</>}
+                                    <button onClick={handleShareImage} disabled={capturing} className="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait min-h-[60px]" aria-label="이미지 공유">
+                                        {capturing ? <span className="flex items-center gap-2">📸 생성 중...</span> : <><IconImage className="w-5 h-5" /> 이미지 공유</>}
                                     </button>
-                                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); showToast("링크가 복사되었습니다! 🔗"); }} className="flex-1 py-4 bg-white text-black rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 min-h-[60px]">
+                                    <button onClick={handleCopyLink} className="flex-1 py-4 bg-white text-black rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 min-h-[60px]" aria-label="링크 복사">
                                         <IconLink className="w-5 h-5" /> 링크 복사
                                     </button>
                                 </div>
@@ -409,45 +505,30 @@
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
-                            <div className="flex items-center gap-2 text-white">
-                                <IconTrophy className="w-5 h-5 text-yellow-300" />
-                                <h3 className="font-black text-xl uppercase tracking-wider text-shadow">VIP Lounge</h3>
-                            </div>
+                            <div className="flex items-center gap-2 text-white"><IconTrophy className="w-5 h-5 text-yellow-300" /><h3 className="font-black text-xl uppercase tracking-wider text-shadow">VIP Lounge</h3></div>
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
                         </div>
                         <div className="relative w-full fade-mask">
-                            <div 
-                                className="vip-marquee-container scrollbar-hide" 
-                                onMouseEnter={() => setIsPaused(true)}
-                                onMouseLeave={() => setIsPaused(false)}
-                                onTouchStart={() => setIsPaused(true)}
-                                onTouchEnd={() => setIsPaused(false)}
-                            >
-                                <div className="vip-marquee-track" style={{ animationPlayState: isPaused ? 'paused' : 'running' }}>
-                                    {displayList.map((card, index) => (
-                                        <div 
-                                            key={`${card.id}-${index}`} 
-                                            onClick={() => setViewingCard(card)} 
-                                            className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group pointer-events-auto cursor-pointer transition-transform hover:scale-105"
-                                        >
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
-                                            <div className="p-5 h-64 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
-                                                        <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
-                                                    </div>
-                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2">{card.title}</h4>
-                                                    <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
+                            <div ref={vipScrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide" style={{ width: '100%', cursor: 'grab', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }} onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onTouchStart={() => setIsPaused(true)} onTouchEnd={() => setIsPaused(false)} onTouchCancel={() => setIsPaused(false)}>
+                                {displayList.map((card, index) => (
+                                    <div key={`${card.id}-${index}`} onClick={() => { setViewingCard(card); if(topRef.current) topRef.current.scrollIntoView({behavior:'smooth'}); }} className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform duration-300 relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                                        <div className="p-5 h-full flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
+                                                    <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
                                                 </div>
-                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600" /></div>
+                                                <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2">{card.title}</h4>
+                                                <p className="text-gray-400 text-xs line-clamp-2 italic">"{card.desc}"</p>
                                             </div>
+                                            <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하면 멈추며, 직접 좌우로 밀어볼 수도 있습니다.</p>
+                        <p className="text-center text-white/60 text-xs font-medium mt-6">* 마우스를 올리거나 터치하면 멈춥니다.</p>
                     </section>
                     
                     {/* Modal */}
@@ -462,25 +543,20 @@
                                             <div className="w-12 h-12 bg-yellow-400 border-2 border-white rounded-full flex items-center justify-center shadow-lg"><IconUser className="text-black w-6 h-6" /></div>
                                             <div className="flex flex-col items-end pt-1"><div className="text-yellow-400 text-xl tracking-widest font-bold drop-shadow-sm leading-none">★★★★★</div></div>
                                         </div>
-                                        <div className="mb-6 flex-grow">
-                                            <h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words">{viewingCard.title}</h2>
-                                            <div className="h-1 w-16 bg-yellow-400 mb-4"></div>
-                                            <p className="text-gray-300 text-[17px] font-medium italic leading-relaxed pr-2">"{viewingCard.desc}"</p>
-                                        </div>
-                                        <div className="border-t border-gray-700 pt-3 mt-4">
-                                            <div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div>
-                                            <div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div>
-                                        </div>
+                                        <div className="mb-6 flex-grow"><h2 className="text-2xl md:text-3xl font-serif font-bold text-white leading-tight mb-3 drop-shadow-md break-words">{viewingCard.title}</h2><div className="h-1 w-16 bg-yellow-400 mb-4"></div><p className="text-gray-300 text-sm md:text-base font-medium italic leading-relaxed pr-2">"{viewingCard.desc}"</p></div>
+                                        <div className="border-t border-gray-700 pt-3 mt-4"><div className="flex justify-between items-center mb-1"><p className="text-[10px] font-mono text-gray-500"><span className="text-indigo-400">ORIGIN:</span> {viewingCard.originalInput}</p></div><div className="flex justify-between items-end text-[10px] md:text-xs text-gray-400 font-mono"><div><p className="text-yellow-400 font-bold">SILICON VALLEY HQ</p><p>1 Infinite Loop, Metaverse</p></div></div></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Footer */}
                     <footer className="w-full text-center py-6 border-t border-white/10 mt-auto">
                         <p className="text-white/60 text-xs font-bold">Powered by Gemini AI & Bluff Technology™</p>
                     </footer>
 
+                    {/* Toast */}
                     <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-6 py-4 rounded-lg shadow-[8px_8px_0px_0px_rgba(255,255,255,0.5)] flex items-center gap-3 transition-all duration-300 z-50 border-2 border-white ${toast.show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
                         <div className="bg-yellow-400 rounded-full p-1 border border-white"><IconSparkles className="w-4 h-4 text-black" /></div>
                         <span className="font-bold text-sm">{toast.message}</span>
@@ -490,7 +566,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<GrandTitleGenerator />);
     </script>
 </body>
 </html>

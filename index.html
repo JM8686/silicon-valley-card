@@ -15,9 +15,9 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -38,7 +38,7 @@
         .animate-fade-in-down { animation: fadeInDown 0.6s ease-out; }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         
-        /* VIP Lounge - Optimized CSS Marquee for all mobile environments */
+        /* VIP Lounge - Hardware Accelerated CSS Marquee with Native Scroll Support */
         .vip-marquee-container {
             width: 100%;
             overflow-x: auto; 
@@ -52,12 +52,12 @@
             display: flex;
             gap: 1.5rem;
             width: max-content;
-            animation: marqueeFlow 50s linear infinite;
+            animation: marqueeFlow 60s linear infinite;
             will-change: transform;
             padding: 1rem 0;
         }
 
-        /* Pause animation on interaction */
+        /* Interaction handling: Pause animation on interaction */
         .vip-marquee-container:hover .vip-marquee-track,
         .vip-marquee-container:active .vip-marquee-track {
             animation-play-state: paused;
@@ -69,8 +69,8 @@
         }
         
         .fade-mask {
-            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
         .text-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.3); }
     </style>
@@ -81,7 +81,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- 아이콘 컴포넌트 ---
+        // --- Icons ---
         const IconBriefcase = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle', flexShrink: 0}}>
                 <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
@@ -137,7 +137,7 @@
             </svg>
         );
 
-        // --- Firebase & API 설정 ---
+        // --- Firebase Config & App ID ---
         const productionFirebaseConfig = {
             apiKey: "AIzaSyAq_82aL0otaPbubYB2Jo69MwVzJJuR4B8",
             authDomain: "silicon-card.firebaseapp.com",
@@ -147,18 +147,10 @@
             appId: "1:942702520870:web:2abc7d4b35abbd6828d4e7"
         };
         
-        let firebaseConfig = productionFirebaseConfig;
-        let appId = 'silicon-card';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : productionFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'silicon-card';
 
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-            if (typeof __app_id !== 'undefined' && __app_id) {
-                appId = __app_id;
-            }
-        } catch (e) { console.warn("Using default config"); }
-
+        // Initialize Firebase
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -178,14 +170,14 @@
             const inputRef = useRef(null);
             const cardRef = useRef(null);
 
-            // 사용자 지정 API 설정
-            const geminiApiKey = "AIzaSyCWNJTK7qMQ2BZ_8RtRFIb5rRWoUpO1tII"; 
-            const model = "gemini-3-flash";
+            // 속도 최적화 모델 설정
+            const apiKey = ""; 
+            const model = "gemini-2.5-flash-preview-09-2025";
 
             const MOCK_VIP_CARDS = useMemo(() => [
-                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 비정형적 주거 엔트로피(무질서도)를 조율하고 가상 배달 플랫폼의 물류 스트림을 분석하여 최적의 영양 공급망을 사수하는 홈 인프라 관리 업무를 수행하고 있습니다.', originalInput: '백수' },
+                { id: 'm1', title: 'Chief Visionary Home Protector', desc: '저는 주거 공간의 엔트로피(무질서도)를 조율하고 가상 배달 플랫폼의 물류 스트림을 분석하여 최적의 영양 공급망을 사수하는 홈 인프라 관리 업무를 수행하고 있습니다.', originalInput: '백수' },
                 { id: 'm2', title: 'Global Last-Mile Logistics Master', desc: '저는 유통망의 라스트 마일(최종 배송 구간)에서 실시간 재고 흐름을 필터링하고 바코드 알고리즘을 지휘하여 조직의 리퀴디티를 확보하는 현장 거버넌스 역할을 수행하고 있습니다.', originalInput: '편의점 알바' },
-                { id: 'm3', title: 'Digital Dopamine Mining Architect', desc: '저는 숏폼 비디오라는 디지털 광산에서 초고농축 도파민(즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 신경망 데이터 큐레이션 프로젝트를 수행하고 있습니다.', originalInput: '유튜브 시청' }
+                { id: 'm3', title: 'Digital Dopamine Mining Architect', desc: '저는 숏폼 비디오라는 디지털 광산에서 초고농축 도파민(즐거움 전달 물질)을 채굴하여 사용자들의 뇌내 보상 체계를 기하급수적으로 최적화하는 데이터 큐레이션 업무를 수행하고 있습니다.', originalInput: '유튜브 시청' }
             ], []);
 
             useEffect(() => {
@@ -205,17 +197,11 @@
 
             useEffect(() => {
                 if (!user) return;
-                let unsubscribe = () => {};
-                try {
-                    const queryRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('cards')
-                        .orderBy('createdAt', 'desc')
-                        .limit(20);
-                        
-                    unsubscribe = queryRef.onSnapshot((snapshot) => {
-                        const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setRecentCards(fetched);
-                    }, (error) => console.warn("Firestore Error:", error));
-                } catch (e) { console.error("Firestore Exception:", e); }
+                const cardsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('cards');
+                const unsubscribe = cardsRef.orderBy('createdAt', 'desc').limit(20).onSnapshot((snapshot) => {
+                    const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setRecentCards(fetched);
+                }, (error) => console.warn("Firestore Error:", error));
                 return () => unsubscribe();
             }, [user]);
 
@@ -238,57 +224,50 @@
                 } catch (e) { console.error("Save Error:", e); }
             };
 
-            // --- 지수 백오프 기반 API 호출 함수 (Gemini 3 Flash 최적화) ---
-            const callGeminiWithRetry = async (promptText) => {
+            const callGeminiWithRetry = async (userPrompt) => {
                 const systemPrompt = `
                   당신은 평범한 직업을 실리콘밸리 CEO처럼 거창하게 바꿔주는 풍자 AI입니다. 
-                  **목표:** 사용자의 입력을 듣고, 아주 짧고 임팩트 있는 영어 직함과 유머러스한 한글 설명을 생성하세요.
+                  목표: 사용자의 입력을 듣고, 멋진 영어 직함과 유머러스한 한글 설명을 생성하세요.
                   
-                  **프롬프트 규칙:**
-                  1. **직함 (English):** 3-5단어 이내. 아주 거창하게 만드세요. (Chief, Strategist, Architect 등 활용)
-                  2. **설명 (한글):** - 반드시 "저는"으로 시작하고 "수행하고 있습니다"로 끝내세요.
-                     - **한글 중심:** 이해하기 쉬운 한글 표현을 기본으로 하되 허세를 섞으세요.
-                     - **언어 규칙:** 모든 영어 전문 용어나 임팩트 있는 단어는 반드시 **한글 음차**로 적으세요. (예: "엔트로피", "인프라").
-                     - **뜻 병기 규칙:** 전체 설명 중 가장 낯선 용어 **딱 1개 또는 2개만** 골라 괄호와 함께 한글 뜻을 표기하세요. (예: "엔트로피(무질서도)").
-                     - **유머 코드:** 사소한 행동을 유니콘 기업의 핵심 공정처럼 묘사하세요.
+                  규칙:
+                  1. 직함 (English): 3-5단어 이내. 아주 거창하게 만드세요.
+                  2. 설명 (한글): 
+                     - 반드시 "저는"으로 시작하고 "수행하고 있습니다"로 끝내세요.
+                     - 모든 영어 단어는 반드시 한글 음차로 적으세요. (예: "엔트로피", "인프라").
+                     - 핵심 단어 딱 1~2개만 골라 한글 음차 뒤에 괄호를 넣고 한글 뜻을 표기하세요. (예: "엔트로피(무질서도)").
+                     - 사소한 행동을 유니콘 기업의 핵심 공정처럼 묘사하세요.
                   
-                  **출력 형식:** 오직 JSON { "title": "...", "desc": "..." } 로만 응답하세요.
+                  오직 다음 JSON 형식으로만 응답하세요: { "title": "...", "desc": "..." }
                 `;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                 const payload = {
-                    contents: [{ parts: [{ text: `입력값: "${promptText}"` }] }],
+                    contents: [{ parts: [{ text: `입력값: "${userPrompt}"` }] }],
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     generationConfig: { responseMimeType: "application/json" }
                 };
 
-                const fetchAttempt = async (retries = 5, delay = 1000) => {
+                const attempt = async (retries = 5, delay = 1000) => {
                     try {
                         const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload),
                         });
-                        if (!response.ok) throw new Error(`API Error ${response.status}`);
-                        return await response.json();
-                    } catch (error) {
+                        if (!response.ok) throw new Error(`Status ${response.status}`);
+                        const data = await response.json();
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        return JSON.parse(text.replace(/```json/g, "").replace(/```/g, "").trim());
+                    } catch (e) {
                         if (retries > 0) {
-                            await new Promise(res => setTimeout(res, delay));
-                            return fetchAttempt(retries - 1, delay * 2);
+                            await new Promise(r => setTimeout(r, delay));
+                            return attempt(retries - 1, delay * 2);
                         }
-                        throw error;
+                        throw e;
                     }
                 };
 
-                try {
-                    const result = await fetchAttempt();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (!text) return null;
-                    return JSON.parse(text.replace(/```json/g, "").replace(/```/g, "").trim());
-                } catch (e) {
-                    console.error("Gemini call failed:", e);
-                    return null;
-                }
+                try { return await attempt(); } catch (e) { return null; }
             };
 
             const analyzeIdentity = async () => {
@@ -338,11 +317,11 @@
                         }
                     });
                     const link = document.createElement('a');
-                    link.download = `card-${Date.now()}.png`;
+                    link.download = `silicon-card-${Date.now()}.png`;
                     link.href = canvas.toDataURL();
                     link.click();
                     showToast("이미지를 저장했습니다! 💾");
-                } catch (e) { showToast("이미지 생성 중 오류 발생"); }
+                } catch (e) { showToast("이미지 생성 오류"); }
                 setCapturing(false);
             };
 
@@ -374,7 +353,7 @@
                                     <label htmlFor="job-input" className="flex items-center gap-2 text-black font-extrabold text-lg uppercase tracking-tight">
                                         <IconZap className="w-5 h-5" /> Current Status (입력)
                                     </label>
-                                    <input ref={inputRef} id="job-input" type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && analyzeIdentity()} placeholder="예: 편의점 알바, 누워있기, 헬스장..." className="w-full bg-indigo-50 text-black border-4 border-black rounded-lg px-4 py-5 outline-none transition-all placeholder-gray-500 font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] focus:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] text-base md:text-lg" />
+                                    <input ref={inputRef} id="job-input" type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && analyzeIdentity()} placeholder="예: 편의점 알바, 누워있기, 헬스장..." className="w-full bg-indigo-50 text-black border-4 border-black focus:border-indigo-500 rounded-lg px-4 py-5 outline-none transition-all placeholder-gray-500 font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] focus:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] text-base md:text-lg" />
                                 </div>
                                 <button onClick={analyzeIdentity} disabled={!inputText.trim()} className={`w-full py-4 rounded-lg font-black text-xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transform transition-all flex items-center justify-center gap-2 active:translate-y-1 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] min-h-[60px] ${inputText.trim() ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-black hover:brightness-110 cursor-pointer' : 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-400 shadow-none'}`}>
                                     <IconSparkles className="w-6 h-6" /> 실리콘밸리 명함 만들기
@@ -385,7 +364,7 @@
                         {loading && (
                             <div className="p-12 flex flex-col items-center justify-center space-y-6 text-center bg-indigo-50 min-h-[300px]">
                                 <div className="w-20 h-20 border-8 border-black border-t-yellow-400 rounded-full animate-spin"></div>
-                                <div><p className="text-xl font-black text-black animate-pulse">실리콘밸리 연봉 협상 중... 💰</p><p className="text-sm font-bold text-indigo-600 mt-2">Calculating Valuation...</p></div>
+                                <div><p className="text-xl font-black text-black animate-pulse">실리콘밸리 Valuation 측정 중... 💰</p></div>
                             </div>
                         )}
 
@@ -412,12 +391,9 @@
 
                                 <div className="bg-yellow-50 p-4 border-b-4 border-black grid grid-cols-2 gap-3">
                                     <button onClick={handleShareImage} disabled={capturing} className="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait min-h-[60px]">
-                                        {capturing ? <span className="flex items-center gap-2">📸 생성 중...</span> : <IconImage className="w-5 h-5 mr-2" />} 이미지 공유
+                                        {capturing ? <span className="flex items-center gap-2">📸 생성 중...</span> : <><IconImage className="w-5 h-5 mr-2" /> 이미지 공유</>}
                                     </button>
-                                    <button onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href);
-                                        showToast("링크가 복사되었습니다! 🔗");
-                                    }} className="flex-1 py-4 bg-white text-black rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 min-h-[60px]">
+                                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); showToast("링크가 복사되었습니다! 🔗"); }} className="flex-1 py-4 bg-white text-black rounded-lg font-black text-sm md:text-lg border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 min-h-[60px]">
                                         <IconLink className="w-5 h-5" /> 링크 복사
                                     </button>
                                 </div>
@@ -429,6 +405,7 @@
                         )}
                     </section>
 
+                    {/* VIP Lounge */}
                     <section className="w-full max-w-[95vw] px-4 pb-20 overflow-hidden">
                         <div className="flex items-center justify-center gap-2 mb-6">
                             <div className="h-px bg-white/30 flex-grow max-w-[100px]"></div>
@@ -441,18 +418,17 @@
                         <div className="relative w-full fade-mask">
                             <div 
                                 className="vip-marquee-container scrollbar-hide" 
-                                onTouchStart={() => setIsPaused(true)}
-                                onTouchEnd={() => setIsPaused(false)}
                                 onMouseEnter={() => setIsPaused(true)}
                                 onMouseLeave={() => setIsPaused(false)}
+                                onTouchStart={() => setIsPaused(true)}
+                                onTouchEnd={() => setIsPaused(false)}
                             >
                                 <div className="vip-marquee-track" style={{ animationPlayState: isPaused ? 'paused' : 'running' }}>
                                     {displayList.map((card, index) => (
                                         <div 
                                             key={`${card.id}-${index}`} 
                                             onClick={() => setViewingCard(card)} 
-                                            className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group pointer-events-auto"
-                                            style={{ cursor: 'pointer' }}
+                                            className="flex-shrink-0 w-64 bg-[#1a202c] border-4 border-black rounded-lg shadow-lg relative overflow-hidden group pointer-events-auto cursor-pointer transition-transform hover:scale-105"
                                         >
                                             <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
                                             <div className="p-5 h-64 flex flex-col justify-between">
@@ -461,10 +437,10 @@
                                                         <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border border-white"><IconUser className="w-4 h-4 text-black" /></div>
                                                         <span className="text-[10px] text-yellow-400 font-bold tracking-widest">VIP</span>
                                                     </div>
-                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2 whitespace-normal">{card.title}</h4>
+                                                    <h4 className="text-white font-serif font-bold text-lg leading-tight line-clamp-2 mb-2">{card.title}</h4>
                                                     <p className="text-gray-400 text-xs line-clamp-3 italic whitespace-normal">"{card.desc}"</p>
                                                 </div>
-                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600 group-hover:text-yellow-400 transition-colors" /></div>
+                                                <div className="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center"><span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">ORIGIN: {card.originalInput}</span><IconGlobe className="w-3 h-3 text-gray-600" /></div>
                                             </div>
                                         </div>
                                     ))}
@@ -474,6 +450,7 @@
                         <p className="text-center text-white/60 text-[10px] md:text-xs font-medium mt-6">* 터치하면 멈추며, 직접 좌우로 밀어볼 수도 있습니다.</p>
                     </section>
                     
+                    {/* Modal */}
                     {viewingCard && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-down" onClick={() => setViewingCard(null)}>
                             <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide rounded-sm" onClick={e => e.stopPropagation()}>

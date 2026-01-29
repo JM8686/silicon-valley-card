@@ -254,54 +254,54 @@
                 }
             };
 
-                // --- Gemini API (수정된 버전: 안전 필터 해제 & 에러 로깅 강화) ---
-                const callGemini = async (prompt) => {
-                    try {
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-                        
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }],
-                                // [중요] 풍자/유머가 차단되지 않도록 안전 필터를 'BLOCK_NONE'으로 설정
-                                safetySettings: [
-                                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                                ],
-                                generationConfig: { responseMimeType: "application/json" }
-                            }),
-                        });
-                        
-                        // HTTP 에러 처리 (400, 403 등)
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            console.error(`API Error [${response.status}]:`, errorData);
+                    // --- Gemini API (수정된 버전: 안전 필터 해제 & 에러 로깅 강화) ---
+                    const callGemini = async (prompt) => {
+                        try {
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+                            
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: prompt }] }],
+                                    // [중요] 풍자/유머가 차단되지 않도록 안전 필터를 'BLOCK_NONE'으로 설정
+                                    safetySettings: [
+                                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                                        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                                        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                                    ],
+                                    generationConfig: { responseMimeType: "application/json" }
+                                }),
+                            });
+                            
+                            // HTTP 에러 처리 (400, 403 등)
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error(`API Error [${response.status}]:`, errorData);
+                                return null; 
+                            }
+        
+                            const data = await response.json();
+                            
+                            // [중요] AI가 안전 문제로 답변을 거부했는지 확인
+                            if (!data.candidates || data.candidates.length === 0) {
+                                console.warn("AI가 답변을 생성했지만 안전 필터에 의해 차단되었거나 내용이 없습니다.", data.promptFeedback);
+                                return null;
+                            }
+        
+                            const rawText = data.candidates[0].content.parts[0].text;
+                            if (!rawText) return null;
+        
+                            // JSON 파싱 (혹시 모를 마크다운 제거)
+                            const jsonStr = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                            return JSON.parse(jsonStr);
+        
+                        } catch (e) { 
+                            console.error("API 실행 중 치명적 오류:", e);
                             return null; 
                         }
-    
-                        const data = await response.json();
-                        
-                        // [중요] AI가 안전 문제로 답변을 거부했는지 확인
-                        if (!data.candidates || data.candidates.length === 0) {
-                            console.warn("AI가 답변을 생성했지만 안전 필터에 의해 차단되었거나 내용이 없습니다.", data.promptFeedback);
-                            return null;
-                        }
-    
-                        const rawText = data.candidates[0].content.parts[0].text;
-                        if (!rawText) return null;
-    
-                        // JSON 파싱 (혹시 모를 마크다운 제거)
-                        const jsonStr = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                        return JSON.parse(jsonStr);
-    
-                    } catch (e) { 
-                        console.error("API 실행 중 치명적 오류:", e);
-                        return null; 
-                    }
-                };
+                    };
                     
                     // 400(Bad Request), 403(Forbidden), 404(Not Found) 등은 재시도해도 실패하므로 즉시 중단
                     if (response.status === 400 || response.status === 403 || response.status === 404) {
